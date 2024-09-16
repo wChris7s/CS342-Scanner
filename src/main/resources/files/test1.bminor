@@ -1,0 +1,10 @@
+i
+x
+mystr
+foq123
+BigLongName55
+factorial: function integer ( x: integer ) = {
+    if (x < 0) return -1;
+    if (x < 3) return x;
+    return factorial(x-1);
+}

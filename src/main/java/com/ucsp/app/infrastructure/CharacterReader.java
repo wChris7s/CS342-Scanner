@@ -5,7 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 public class CharacterReader {
-  private BufferedReader reader;
+  private final BufferedReader reader;
 
   private int currentChar;
 
@@ -20,7 +20,7 @@ public class CharacterReader {
     return character;
   }
 
-  public char peekChar() throws IOException {
+  public char peekChar() {
     return (char) this.currentChar;
   }
 

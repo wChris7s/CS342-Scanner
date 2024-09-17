@@ -34,9 +34,21 @@ public class TokenProcessor {
         String token = getToken();
         if (validator.isKeyword(token)) {
           log.info("Reserved keyword: {}", token);
-        } else {
+        }  else {
           log.info("Identifier: {}", token);
         }
+      } else if (characterReader.peekChar() == '/') {
+        char character= characterReader.getChar();
+        if(characterReader.peekChar()=='/') {
+          log.info("Comentario de linea");
+          while(characterReader.peekChar()!='\n')
+            character=characterReader.getChar();
+        } else if (characterReader.peekChar()=='*') {
+          log.info("Comentario de bloque");
+          while(character!='*' && characterReader.getChar()!='/')
+            character=characterReader.getChar();
+        }
+
       } else {
         characterReader.getChar();
       }

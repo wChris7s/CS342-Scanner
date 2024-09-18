@@ -10,7 +10,7 @@ import java.io.IOException;
 
 public class CsApplication {
   public static void main(String[] args) throws IOException {
-    String path = "src/main/resources/files/test1.bminor";
+    String path = "src/main/resources/files/good9.bminor";
     TokenProcessor tokenProcessor = new TokenProcessor(new CharacterValidator(), new CharacterReader(path));
     Reader reader = new ReaderImpl(tokenProcessor);
     reader.read();

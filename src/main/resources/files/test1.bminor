@@ -2,9 +2,24 @@ i
 x
 mystr
 foq123
+/* block comment
+ dasdasdasdas asdasdasd */
+// Here is a single line comment
+// Here is a single line comment a=2 function
+
+"this is a string"
+// Here is a single line comment
+"other string"
+'t'
+/* asdasdasdasdas */
+'a'
+
+=======
 BigLongName55
 factorial: function integer ( x: integer ) = {
     if (x < 0) return -1;
     if (x < 3) return x;
     return factorial(x-1);
 }
+/* block comment */
+// Here is a single line comment

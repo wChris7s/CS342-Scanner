@@ -3,8 +3,8 @@ package com.ucsp.app.domain.enums;
 public enum Operator {
   INCREMENT("++"),
   DECREMENT("--"),
-  UNARY_NEGATION("-"),
   LOGICAL_NOT("!"),
+  UNARY_NEGATION("-"),
   EXPONENTIATION("^"),
   MULTIPLICATION("*"),
   DIVISION("/"),

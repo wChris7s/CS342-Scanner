@@ -1,24 +1,12 @@
-i
-x
-mystr
-foq123
-/* block comment
- dasdasdasdas asdasdasd */
-// Here is a single line comment
-// Here is a single line comment a=2 function
-
-"this is a string"
-// Here is a single line comment
-"other string"
-'t'
-/* asdasdasdasdas */
-'a'
-
-BigLongName55
-factorial: function integer ( x: integer ) = {
-    if (x < 0) return -1;
-    if (x < 3) return x;
-    return factorial(x-1);
+a = 2 + 7
+print (a) // lorem ipsum
+/* Neque porro quisquam est qui dolorem ipsum quia dolor
+sit amet, consectetur, adipisci velit... */
+b=10*20
+abc++
+abc--
+return (a == b) || (a == c && b == a)
+x: string;
+foo: function integer(var1: string, var2: string) {
+    // lorem ipsum
 }
-/* block comment */
-// Here is a single line comment

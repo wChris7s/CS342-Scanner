@@ -1,4 +1,4 @@
-package com.ucsp.app.domain;
+package com.ucsp.app.domain.manager;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

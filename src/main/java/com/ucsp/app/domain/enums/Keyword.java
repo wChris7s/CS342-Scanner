@@ -1,6 +1,6 @@
-package com.ucsp.app.application;
+package com.ucsp.app.domain.enums;
 
-public enum ReservedWord {
+public enum Keyword {
   ARRAY("array"),
   BOOLEAN("boolean"),
   CHAR("char"),
@@ -19,7 +19,7 @@ public enum ReservedWord {
 
   private final String word;
 
-  ReservedWord(String word) {
+  Keyword(String word) {
     this.word = word;
   }
 

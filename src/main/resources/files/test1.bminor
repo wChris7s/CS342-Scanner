@@ -14,7 +14,6 @@ foq123
 /* asdasdasdasdas */
 'a'
 
-=======
 BigLongName55
 factorial: function integer ( x: integer ) = {
     if (x < 0) return -1;

@@ -1,7 +1,7 @@
 package com.ucsp.app.application.interactor;
 
 import com.ucsp.app.application.port.in.TokenProcessorUseCase;
-import com.ucsp.app.domain.ReaderManager;
+import com.ucsp.app.domain.manager.ReaderManager;
 import com.ucsp.app.domain.validators.CharacterValidator;
 import com.ucsp.app.domain.validators.TokenValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +23,13 @@ public class TokenProcessorInteractor implements TokenProcessorUseCase {
     this.readerManager = readerManager;
   }
 
+  private boolean isValidToken(char c) {
+    return chValidator.isLetter(c) || chValidator.isDigit(c) || c == '_';
+  }
+
   private String getToken() throws IOException {
     StringBuilder token = new StringBuilder();
-    while (readerManager.hasNext() && tokenValidator.isValidToken(readerManager.peekChar())) {
+    while (readerManager.hasNext() && isValidToken(readerManager.peekChar())) {
       token.append(readerManager.getChar());
     }
     return token.toString();
@@ -95,6 +99,25 @@ public class TokenProcessorInteractor implements TokenProcessorUseCase {
     }
   }
 
+  private void processOperator() throws IOException {
+    StringBuilder operator = new StringBuilder();
+    boolean isOperator = false;
+    while (readerManager.hasNext() && !chValidator.isWhitespace(readerManager.peekChar())) {
+      operator.append(readerManager.getChar());
+      if (tokenValidator.isOperator(operator.toString())) {
+        isOperator = true;
+        log.info("Operator: {}", operator);
+      }
+    }
+    if (!isOperator) {
+      readerManager.getChar();
+    }
+  }
+
+  private void processDelimiter() throws IOException {
+    char delimiter = readerManager.getChar();
+    log.info("Delimiter: {}", delimiter);
+  }
 
   @Override
   public void processTokens() throws IOException {
@@ -108,8 +131,10 @@ public class TokenProcessorInteractor implements TokenProcessorUseCase {
         processCharacter();
       } else if (currentChar == '"') {
         processString();
+      } else if (currentChar == '(' || currentChar == ')' || currentChar == '{' || currentChar == '}' || currentChar == '[' || currentChar == ']') {
+        processDelimiter();
       } else {
-        readerManager.getChar();
+        processOperator();
       }
     }
     readerManager.close();

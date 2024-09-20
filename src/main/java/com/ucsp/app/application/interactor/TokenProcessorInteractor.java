@@ -2,6 +2,7 @@ package com.ucsp.app.application.interactor;
 
 import com.ucsp.app.application.port.in.TokenProcessorUseCase;
 import com.ucsp.app.application.port.out.ReaderManager;
+import com.ucsp.app.domain.log.LogMessage;
 import com.ucsp.app.domain.log.LogPosition;
 import com.ucsp.app.domain.token.TokenProcessor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,9 @@ public class TokenProcessorInteractor implements TokenProcessorUseCase {
         }
       }
       if (!processed) {
+        if (!Character.isWhitespace(currentChar) && currentChar != '\n') {
+          log.error(LogMessage.UNRECOGNIZED_CHARACTER, currentChar, LogPosition.getLine(), LogPosition.getColumn());
+        }
         LogPosition.updatePosition(readerManager.getChar());
       }
     }

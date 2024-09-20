@@ -1,12 +1,13 @@
 a = 226 + 7
 print (a); // lorem ipsum
 /* Neque porro quisquam est qui dolorem ipsum quia dolor
-sit amet, consectetur, adipisci velit...*/
+sit amet, consectetur, adipisci velit... */
 b=10*20
 abc++
 abc--
 return (a () ( )== b) || (a == c && b== a ;
 x: string;
+$
 foo: function integer(var1: string, var2: string) {
     // lorem ipsum
-}
+}~

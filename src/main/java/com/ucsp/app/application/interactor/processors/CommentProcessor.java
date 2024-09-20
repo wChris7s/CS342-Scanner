@@ -5,7 +5,9 @@ import com.ucsp.app.domain.log.LogMessage;
 import com.ucsp.app.domain.log.LogPosition;
 import com.ucsp.app.domain.token.TokenProcessor;
 import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
+
 @Slf4j
 public class CommentProcessor implements TokenProcessor {
 
@@ -21,19 +23,21 @@ public class CommentProcessor implements TokenProcessor {
     }
   }
 
-  private void processBlockComment(boolean state) throws IOException {
+  private void processBlockComment() throws IOException {
+    boolean isClosed = false;
     LogPosition.updatePosition(readerManager.getChar());
     while (readerManager.hasNext()) {
       char currentChar = readerManager.getChar(); // get '*' and move next '/'
       LogPosition.updatePosition(currentChar);
       if (currentChar == '*' && readerManager.hasNext() && readerManager.peekChar() == '/') {
+        isClosed = true;
         LogPosition.updatePosition(readerManager.getChar());
         break;
       }
     }
-    if(state==true)
-      log.debug(LogMessage.BLOCK_COMMENT_NF);
-    // TODO: Handle comment without closure (*'/).
+    if (!isClosed) {
+      log.debug(LogMessage.BLOCK_COMMENT_ERR);
+    }
   }
 
   @Override
@@ -43,8 +47,7 @@ public class CommentProcessor implements TokenProcessor {
       if (readerManager.peekChar() == '/') {
         processInlineComment();
       } else if (readerManager.peekChar() == '*') {
-        boolean state=true;
-        processBlockComment(state);
+        processBlockComment();
       }
     }
   }

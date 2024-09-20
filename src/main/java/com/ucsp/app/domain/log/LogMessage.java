@@ -12,4 +12,6 @@ public class LogMessage {
   public static final String BLOCK_COMMENT  = DEBUG + "BLOCK COMMENT found at ({}:{})";
   public static final String KEYWORD    = DEBUG + "KEYWORD [ {} ] found at ({}:{})";
   public static final String IDENTIFIER = DEBUG + "ID [ {} ] found at ({}:{})";
+  public static final String INTEGER = DEBUG + "NUMBER [ {} ] found at ({}:{})";
+  public static final String BLOCK_COMMENT_NF = DEBUG + "UNCLOSED BLOCK COMMENT";
 }

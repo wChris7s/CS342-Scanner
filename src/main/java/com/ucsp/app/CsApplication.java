@@ -23,9 +23,10 @@ public class CsApplication {
     TokenProcessor characterProcessor = new CharacterProcessor(readerManager);
     TokenProcessor operatorProcessor = new OperatorProcessor(readerManager);
     TokenProcessor stringProcessor = new StringProcessor(readerManager);
+    TokenProcessor IntegerProcessor = new IntegerProcessor(readerManager);
 
     TokenProcessorUseCase tokenProcessorUseCase = new TokenProcessorInteractor(Arrays.asList(identifierProcessor,
-      commentProcessor, delimiterProcessor, characterProcessor, operatorProcessor, stringProcessor),
+      commentProcessor, delimiterProcessor, characterProcessor, operatorProcessor, stringProcessor, IntegerProcessor),
       readerManager);
     ScannerUseCase scannerUseCase = new ScannerInteractor(tokenProcessorUseCase);
     scannerUseCase.read();

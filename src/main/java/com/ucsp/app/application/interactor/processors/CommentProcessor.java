@@ -1,11 +1,12 @@
 package com.ucsp.app.application.interactor.processors;
 
 import com.ucsp.app.application.port.out.ReaderManager;
+import com.ucsp.app.domain.log.LogMessage;
 import com.ucsp.app.domain.log.LogPosition;
 import com.ucsp.app.domain.token.TokenProcessor;
-
+import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
-
+@Slf4j
 public class CommentProcessor implements TokenProcessor {
 
   private final ReaderManager readerManager;
@@ -20,7 +21,7 @@ public class CommentProcessor implements TokenProcessor {
     }
   }
 
-  private void processBlockComment() throws IOException {
+  private void processBlockComment(boolean state) throws IOException {
     LogPosition.updatePosition(readerManager.getChar());
     while (readerManager.hasNext()) {
       char currentChar = readerManager.getChar(); // get '*' and move next '/'
@@ -30,6 +31,8 @@ public class CommentProcessor implements TokenProcessor {
         break;
       }
     }
+    if(state==true)
+      log.debug(LogMessage.BLOCK_COMMENT_NF);
     // TODO: Handle comment without closure (*'/).
   }
 
@@ -40,7 +43,8 @@ public class CommentProcessor implements TokenProcessor {
       if (readerManager.peekChar() == '/') {
         processInlineComment();
       } else if (readerManager.peekChar() == '*') {
-        processBlockComment();
+        boolean state=true;
+        processBlockComment(state);
       }
     }
   }

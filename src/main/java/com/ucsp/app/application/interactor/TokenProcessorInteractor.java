@@ -24,14 +24,18 @@ public class TokenProcessorInteractor implements TokenProcessorUseCase {
   public void processTokens() throws IOException {
     while (readerManager.hasNext()) {
       char currentChar = readerManager.peekChar();
+      boolean processed = false;
       for (TokenProcessor processor : processors) {
         if (processor.supports(currentChar)) {
+          processed = true;
           processor.process();
           break;
         }
       }
-      LogPosition.updatePosition(readerManager.peekChar());
-      readerManager.getChar();
+      if (!processed) {
+        LogPosition.updatePosition(readerManager.peekChar());
+        readerManager.getChar();
+      }
     }
     readerManager.close();
   }

@@ -16,26 +16,37 @@ public class DelimiterProcessor implements TokenProcessor {
   public DelimiterProcessor(ReaderManager readerManager) {
     this.readerManager = readerManager;
   }
-  static int cont=0;
+  final int max=100;
+  String[] pila= new String[max];
+  int tope=-1;
+
   @Override
   public void process() throws IOException {
     int currentColumn = LogPosition.getColumn();
     char delimiter = readerManager.getChar();
-    /*if(delimiter=='('){
-      cont+=1;
-      System.out.println(cont+"----cont suamndo");
+    LogPosition.updatePosition(delimiter);
+
+    if(delimiter=='('){
+      String Pilar=Integer.toString(LogPosition.getLine())+':'+Integer.toString(currentColumn);
+      pila[++tope]=Pilar;
     }
     else if(delimiter==')'){
-      cont-=1;
-      System.out.println(cont+"----cont restabdo");
+      if (tope >= 0) {
+        String valorEliminado = pila[tope--];
+        while (tope >= 0) {
+          valorEliminado = pila[tope--];
+        }
+      }
     }
     else if(delimiter==';'){
-      System.out.println(cont+"---este es la pila");
-    }*/
-    LogPosition.updatePosition(delimiter);
+      for (int i = 0; i <= tope; i++) {
+        String valorEliminado = pila[tope--];
+        System.out.println(pila[i]);
+      }
+    }
     log.debug(LogMessage.DELIMITER, delimiter, LogPosition.getLine(), currentColumn);
-  }
 
+  }
 
   @Override
   public boolean supports(char currentChar) {

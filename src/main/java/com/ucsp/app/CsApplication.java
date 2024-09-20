@@ -10,24 +10,22 @@ import com.ucsp.app.domain.token.TokenProcessor;
 import com.ucsp.app.infrastructure.adapter.out.file.DefaultReaderManager;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 
 public class CsApplication {
   public static void main(String[] args) throws IOException {
     String path = "src/main/resources/files/test1.bminor";
     ReaderManager readerManager = new DefaultReaderManager(path);
+    List<TokenProcessor> processors = List.of(
+      new IdentifierProcessor(readerManager),
+      new CommentProcessor(readerManager),
+      new DelimiterProcessor(readerManager),
+      new CharacterProcessor(readerManager),
+      new OperatorProcessor(readerManager),
+      new StringProcessor(readerManager)
+    );
 
-    TokenProcessor identifierProcessor = new IdentifierProcessor(readerManager);
-    TokenProcessor commentProcessor = new CommentProcessor(readerManager);
-    TokenProcessor delimiterProcessor = new DelimiterProcessor(readerManager);
-    TokenProcessor characterProcessor = new CharacterProcessor(readerManager);
-    TokenProcessor operatorProcessor = new OperatorProcessor(readerManager);
-    TokenProcessor stringProcessor = new StringProcessor(readerManager);
-    TokenProcessor IntegerProcessor = new IntegerProcessor(readerManager);
-
-    TokenProcessorUseCase tokenProcessorUseCase = new TokenProcessorInteractor(Arrays.asList(identifierProcessor,
-      commentProcessor, delimiterProcessor, characterProcessor, operatorProcessor, stringProcessor, IntegerProcessor),
-      readerManager);
+    TokenProcessorUseCase tokenProcessorUseCase = new TokenProcessorInteractor(processors, readerManager);
     ScannerUseCase scannerUseCase = new ScannerInteractor(tokenProcessorUseCase);
     scannerUseCase.read();
   }

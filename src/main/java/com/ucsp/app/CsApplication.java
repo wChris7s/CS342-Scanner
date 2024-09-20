@@ -22,7 +22,8 @@ public class CsApplication {
       new DelimiterProcessor(readerManager),
       new CharacterProcessor(readerManager),
       new OperatorProcessor(readerManager),
-      new StringProcessor(readerManager)
+      new StringProcessor(readerManager),
+      new IntegerProcessor(readerManager)
     );
 
     TokenProcessorUseCase tokenProcessorUseCase = new TokenProcessorInteractor(processors, readerManager);

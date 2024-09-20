@@ -35,21 +35,13 @@ public class OperatorProcessor implements TokenProcessor {
   public void process() throws IOException {
     var operator = new StringBuilder();
     int currentColumn = LogPosition.getColumn();
-    String lastValidOperator = null;
-
-    while (readerManager.hasNext() && !Character.isWhitespace(readerManager.peekChar())) {
+    operator.append(readerManager.peekChar());
+    LogPosition.updatePosition(readerManager.getChar());
+    if (isOperator(operator.toString() + readerManager.peekChar())) {
       operator.append(readerManager.peekChar());
       LogPosition.updatePosition(readerManager.getChar());
-      if (isOperator(operator.toString())) {
-        lastValidOperator = operator.toString();
-      } else if (lastValidOperator != null) {
-        log.debug(LogMessage.OPERATOR, lastValidOperator, LogPosition.getLine(), currentColumn);
-        return;
-      }
     }
-    if (lastValidOperator != null) {
-      log.debug(LogMessage.OPERATOR, lastValidOperator, LogPosition.getLine(), currentColumn);
-    }
+    log.debug(LogMessage.OPERATOR, operator, LogPosition.getLine(), currentColumn);
   }
 
   @Override

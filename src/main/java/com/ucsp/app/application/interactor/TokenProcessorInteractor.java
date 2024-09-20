@@ -33,8 +33,7 @@ public class TokenProcessorInteractor implements TokenProcessorUseCase {
         }
       }
       if (!processed) {
-        LogPosition.updatePosition(readerManager.peekChar());
-        readerManager.getChar();
+        LogPosition.updatePosition(readerManager.getChar());
       }
     }
     readerManager.close();

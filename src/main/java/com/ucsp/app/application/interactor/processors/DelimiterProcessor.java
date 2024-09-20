@@ -16,17 +16,29 @@ public class DelimiterProcessor implements TokenProcessor {
   public DelimiterProcessor(ReaderManager readerManager) {
     this.readerManager = readerManager;
   }
-
+  static int cont=0;
   @Override
   public void process() throws IOException {
     int currentColumn = LogPosition.getColumn();
     char delimiter = readerManager.getChar();
+    /*if(delimiter=='('){
+      cont+=1;
+      System.out.println(cont+"----cont suamndo");
+    }
+    else if(delimiter==')'){
+      cont-=1;
+      System.out.println(cont+"----cont restabdo");
+    }
+    else if(delimiter==';'){
+      System.out.println(cont+"---este es la pila");
+    }*/
     LogPosition.updatePosition(delimiter);
     log.debug(LogMessage.DELIMITER, delimiter, LogPosition.getLine(), currentColumn);
   }
 
+
   @Override
   public boolean supports(char currentChar) {
-    return "(){}[]".indexOf(currentChar) != -1;
+    return "(){}[];".indexOf(currentChar) != -1;
   }
 }

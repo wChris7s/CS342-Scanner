@@ -16,7 +16,6 @@ public class CsApplication {
   public static void main(String[] args) throws IOException {
     String path = "src/main/resources/files/test1.bminor";
     ReaderManager readerManager = new DefaultReaderManager(path);
-
     List<TokenProcessor> processors = List.of(
       new IdentifierProcessor(readerManager),
       new CommentProcessor(readerManager),

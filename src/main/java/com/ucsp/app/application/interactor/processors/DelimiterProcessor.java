@@ -20,12 +20,7 @@ public class DelimiterProcessor implements TokenProcessor {
   String[] pila= new String[max];
   int tope=-1;
 
-  @Override
-  public void process() throws IOException {
-    int currentColumn = LogPosition.getColumn();
-    char delimiter = readerManager.getChar();
-    LogPosition.updatePosition(delimiter);
-
+  private void Parent(char delimiter, int currentColumn){
     if(delimiter=='('){
       String Pilar=Integer.toString(LogPosition.getLine())+':'+Integer.toString(currentColumn);
       pila[++tope]=Pilar;
@@ -38,12 +33,20 @@ public class DelimiterProcessor implements TokenProcessor {
         }
       }
     }
-    else if(delimiter==';'){
+    else if(delimiter==';' || delimiter=='{'){
       for (int i = 0; i <= tope; i++) {
         String valorEliminado = pila[tope--];
-        System.out.println(pila[i]);
+        log.debug(LogMessage.UNCLOSEDDELIMITER,pila[i]);
+
       }
     }
+  }
+  @Override
+  public void process() throws IOException {
+    int currentColumn = LogPosition.getColumn();
+    char delimiter = readerManager.getChar();
+    LogPosition.updatePosition(delimiter);
+    Parent(delimiter,currentColumn);
     log.debug(LogMessage.DELIMITER, delimiter, LogPosition.getLine(), currentColumn);
 
   }

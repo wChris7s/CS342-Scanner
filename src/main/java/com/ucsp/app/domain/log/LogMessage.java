@@ -16,4 +16,5 @@ public class LogMessage {
   public static final String INTEGER = DEBUG + "NUMBER [ {} ] found at ({}:{})";
   public static final String BLOCK_COMMENT_ERR = ERROR + "UNCLOSED BLOCK COMMENT";
   public static final String UNRECOGNIZED_CHARACTER = ERROR + "UNRECOGNIZED CHARACTER [ {} ] found at ({}:{})";
+  public static final String UNCLOSEDDELIMITER = ERROR + "UNCLOSED DELIMITER at ({})";
 }

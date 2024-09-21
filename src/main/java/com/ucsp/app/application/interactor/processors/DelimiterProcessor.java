@@ -16,17 +16,44 @@ public class DelimiterProcessor implements TokenProcessor {
   public DelimiterProcessor(ReaderManager readerManager) {
     this.readerManager = readerManager;
   }
+  final int max=100;
+  String[] pila= new String[max];
+  int tope=-1;
 
+  // TODO: fix for all use cases like (), {} and [].
+  private void parent(char delimiter, int currentColumn){
+    if(delimiter=='('){
+      String Pilar=Integer.toString(LogPosition.getLine())+':'+Integer.toString(currentColumn);
+      pila[++tope]=Pilar;
+    }
+    else if(delimiter==')'){
+      if (tope >= 0) {
+        String valorEliminado = pila[tope--];
+        while (tope >= 0) {
+          valorEliminado = pila[tope--];
+        }
+      }
+    }
+    else if(delimiter==';' || delimiter=='{'){
+      for (int i = 0; i <= tope; i++) {
+        String valorEliminado = pila[tope--];
+        log.debug(LogMessage.UNCLOSEDDELIMITER,pila[i]);
+
+      }
+    }
+  }
   @Override
   public void process() throws IOException {
     int currentColumn = LogPosition.getColumn();
     char delimiter = readerManager.getChar();
     LogPosition.updatePosition(delimiter);
+    parent(delimiter,currentColumn);
     log.debug(LogMessage.DELIMITER, delimiter, LogPosition.getLine(), currentColumn);
+
   }
 
   @Override
   public boolean supports(char currentChar) {
-    return "(){}[]".indexOf(currentChar) != -1;
+    return "(){}[];".indexOf(currentChar) != -1;
   }
 }

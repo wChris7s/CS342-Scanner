@@ -43,11 +43,15 @@ public class CommentProcessor implements TokenProcessor {
   @Override
   public void process() throws IOException {
     if (readerManager.hasNext()) {
-      LogPosition.updatePosition(readerManager.getChar());  // process the first '/'
+      char currentChar = readerManager.getChar();  // process the first '/'
+      int currentColumn = LogPosition.getColumn();
+      LogPosition.updatePosition(currentChar);
       if (readerManager.peekChar() == '/') {
         processInlineComment();
       } else if (readerManager.peekChar() == '*') {
         processBlockComment();
+      } else {  // stop processing the comment to process the division operator
+        log.debug(LogMessage.OPERATOR, currentChar, LogPosition.getLine(), currentColumn);
       }
     }
   }

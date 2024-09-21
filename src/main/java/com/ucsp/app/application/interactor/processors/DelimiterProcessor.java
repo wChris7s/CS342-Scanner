@@ -20,7 +20,8 @@ public class DelimiterProcessor implements TokenProcessor {
   String[] pila= new String[max];
   int tope=-1;
 
-  private void Parent(char delimiter, int currentColumn){
+  // TODO: fix for all use cases like (), {} and [].
+  private void parent(char delimiter, int currentColumn){
     if(delimiter=='('){
       String Pilar=Integer.toString(LogPosition.getLine())+':'+Integer.toString(currentColumn);
       pila[++tope]=Pilar;
@@ -46,7 +47,7 @@ public class DelimiterProcessor implements TokenProcessor {
     int currentColumn = LogPosition.getColumn();
     char delimiter = readerManager.getChar();
     LogPosition.updatePosition(delimiter);
-    Parent(delimiter,currentColumn);
+    parent(delimiter,currentColumn);
     log.debug(LogMessage.DELIMITER, delimiter, LogPosition.getLine(), currentColumn);
 
   }

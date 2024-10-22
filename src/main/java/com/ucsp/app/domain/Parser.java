@@ -155,7 +155,9 @@ public class Parser {
       IfStmt();
     } else if (currentToken.tokenType().equals(FOR)) {
       ForStmt();
-    } else if (currentToken.tokenType().equals(RETURN)) {
+    } else if (currentToken.tokenType().equals(WHILE)) {
+      WhileStmt();
+    }else if (currentToken.tokenType().equals(RETURN)) {
       ReturnStmt();
     } else if (currentToken.tokenType().equals(PRINT)) {
       PrintStmt();
@@ -195,6 +197,15 @@ public class Parser {
     Expression();
     eat(Delimiter.SEMICOLON);
     ExprStmt();
+    eat(Delimiter.R_PARENTHESIS);
+    Statement();
+  }
+
+  private void WhileStmt(){
+    // WhileStmt -> while ( Expression ) Statement
+    eat(WHILE);
+    eat(L_PARENTHESIS);
+    Expression();
     eat(Delimiter.R_PARENTHESIS);
     Statement();
   }

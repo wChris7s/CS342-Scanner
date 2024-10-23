@@ -226,12 +226,33 @@ public class Parser {
     eat(SEMICOLON);
   }
 
-  // ExprStmt -> Expression ; | ;
+  // ExprStmt -> Identifier ++ ; | Identifier -- ; | Expression ; | ;
   private void ExprStmt() {
-    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != SEMICOLON) {
+    Token currentToken = tokenReader.getCurrentToken();
+
+    if (currentToken != null && currentToken.tokenType() == IDENTIFIER) {
+      eat(IDENTIFIER);
+      if (tokenReader.getCurrentToken().tokenType() == INCREMENT) {
+        eat(INCREMENT);
+        eat(SEMICOLON);
+      }
+      else if (tokenReader.getCurrentToken().tokenType() == DECREMENT) {
+        eat(DECREMENT);
+        eat(SEMICOLON);
+      }
+      else if (tokenReader.getCurrentToken().tokenType() == SQUARE) {
+        eat(SQUARE);
+        eat(SEMICOLON);
+      }
+      else {
+        eat(SEMICOLON);
+      }
+    } else if (currentToken != null && currentToken.tokenType() != SEMICOLON) {
       Expression();
+      eat(SEMICOLON);
+    } else {
+      eat(SEMICOLON);
     }
-    eat(SEMICOLON);
   }
 
   // ExprList -> Expression ExprList'
@@ -362,12 +383,13 @@ public class Parser {
     }
   }
 
-  // Unary -> ! Unary | - Unary | Factor
+  // Unary -> ! Unary | - Unary  | Factor
   private void Unary() {
-    if (tokenReader.getCurrentToken().tokenType() == LOGICAL_NOT) {
+    Token currentToken = tokenReader.getCurrentToken();
+    if (currentToken.tokenType() == LOGICAL_NOT) {
       eat(LOGICAL_NOT);
       Unary();
-    } else if (tokenReader.getCurrentToken().tokenType() == SUBTRACTION) {
+    } else if (currentToken.tokenType() == SUBTRACTION) {
       eat(SUBTRACTION);
       Unary();
     } else {

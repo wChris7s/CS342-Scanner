@@ -25,13 +25,12 @@ public class MainApplication {
       new OperatorProcessor(reader),
       new StringProcessor(reader),
       new IntegerProcessor(reader));
-    List<Token> tokens = new ArrayList<>();
-    Scanner scanner = new Scanner(processors, tokens, reader);
+    Scanner scanner = new Scanner(processors, reader);
     scanner.tokenize();
 
     System.out.print("\n\n");
 
-    TokenReader tokenReader = new TokenReaderImpl(tokens);
+    TokenReader tokenReader = new TokenReaderImpl(scanner.getTokens());
     Parser parser = new Parser(tokenReader);
     parser.parse();
   }

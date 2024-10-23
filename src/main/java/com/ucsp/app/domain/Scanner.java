@@ -8,6 +8,7 @@ import com.ucsp.app.domain.token.Token;
 import com.ucsp.app.domain.token.types.impl.Category;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,9 +20,9 @@ public class Scanner {
   private final Reader reader;
 
 
-  public Scanner(List<TokenProcessor> tokenProcessors, List<Token> tokens, Reader reader) {
+  public Scanner(List<TokenProcessor> tokenProcessors, Reader reader) {
     this.tokenProcessors = tokenProcessors;
-    this.tokens = tokens;
+    this.tokens = new ArrayList<>();
     this.reader = reader;
   }
 

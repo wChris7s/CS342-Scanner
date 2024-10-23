@@ -5,6 +5,7 @@ import com.ucsp.app.domain.token.types.TokenType;
 public enum Operator implements TokenType {
   INCREMENT("++"),
   DECREMENT("--"),
+  SQUARE("**"),
   LOGICAL_NOT("!"),
   EXPONENTIATION("^"),
   MULTIPLICATION("*"),

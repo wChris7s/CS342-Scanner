@@ -28,9 +28,7 @@ public class MainApplication {
     scanner.tokenize();
 
     System.out.print("\n\n");
-    scanner.getTokens().forEach(System.out::println);
 
-    System.out.print("\n\n");
     Parser parser = new Parser(tokens);
     parser.parse();
   }

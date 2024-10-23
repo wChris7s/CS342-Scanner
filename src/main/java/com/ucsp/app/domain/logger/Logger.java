@@ -1,5 +1,6 @@
 package com.ucsp.app.domain.logger;
 
+import com.ucsp.app.domain.token.Token;
 import com.ucsp.app.domain.token.types.TokenType;
 
 public class Logger {
@@ -12,6 +13,10 @@ public class Logger {
 
   private static final String ERROR_MESSAGE = "ERROR SCAN - UNRECOGNIZED CHARACTER [ '%s' ] found at (%d:%d)";
 
+  private static final String PARSER_DEBUG_MESSAGE = "DEBUG PARSER - Current token [ '%s'] with value [ '%s' ], expected [ '%s' ]";
+
+  private static final String PARSER_ERROR_MESSAGE = "ERROR PARSER - %s";
+
   public static void updatePosition(char c) {
     if (c == '\n') {
       line++;
@@ -19,10 +24,6 @@ public class Logger {
     } else {
       column++;
     }
-  }
-
-  public static int getLine() {
-    return line;
   }
 
   public static int getColumn() {
@@ -37,5 +38,18 @@ public class Logger {
   public static void error(String value) {
     String message = String.format(ERROR_MESSAGE, value, line, column);
     System.out.println(message);
+  }
+
+  public static void parserDebug(Token currentToken, TokenType expected) {
+    String formattedMessage = String.format(PARSER_DEBUG_MESSAGE,
+      currentToken.tokenType().name(),
+      currentToken.tokenValue(),
+      expected.name());
+    System.out.println(formattedMessage);
+  }
+
+  public static void parserError(String message) {
+    String formattedMessage = String.format(PARSER_ERROR_MESSAGE, message);
+    System.out.println(formattedMessage);
   }
 }

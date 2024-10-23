@@ -1,1 +1,17 @@
-int i = 10;
+void foo(){
+    int e = 10;
+    while(e <= 10){
+        print("Hello World!");
+        for( int q = 0; q < 10; q = q + 1){
+            print(q);
+            while(q == 2) {
+                print("Q is two :)");
+            }
+        }
+    }
+    return;
+}
+
+int main(int t){
+    return t;
+}

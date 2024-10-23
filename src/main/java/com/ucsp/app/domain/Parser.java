@@ -1,70 +1,60 @@
 package com.ucsp.app.domain;
 
+import com.ucsp.app.domain.logger.Logger;
 import com.ucsp.app.domain.token.Token;
 import com.ucsp.app.domain.token.types.TokenType;
-import com.ucsp.app.domain.token.types.impl.Delimiter;
-import com.ucsp.app.domain.token.types.impl.Keyword;
-import com.ucsp.app.domain.token.types.impl.Operator;
 
 import java.util.List;
 
 import static com.ucsp.app.domain.token.types.impl.Category.*;
-import static com.ucsp.app.domain.token.types.impl.Delimiter.L_BRACE;
-import static com.ucsp.app.domain.token.types.impl.Delimiter.L_PARENTHESIS;
+import static com.ucsp.app.domain.token.types.impl.Delimiter.*;
 import static com.ucsp.app.domain.token.types.impl.Keyword.*;
+import static com.ucsp.app.domain.token.types.impl.Operator.*;
 
 public class Parser {
-  private List<Token> tokens;
+  private final List<Token> tokens;
+
   private int currentTokenIndex;
+
   private Token currentToken;
 
   public Parser(List<Token> tokens) {
     this.tokens = tokens;
     this.currentTokenIndex = 0;
-    this.currentToken = tokens.size() > 0 ? tokens.get(0) : null;
-  }
-
-
-  private void log(String message) {
-    System.out.println(message);
+    this.currentToken = !tokens.isEmpty() ? tokens.get(0) : null;
   }
 
   private void eat(TokenType tokenType) {
-    log("Current token: " + currentToken + ", expected: " + tokenType);
+    Logger.parserDebug(currentToken, tokenType);
     if (currentToken != null && currentToken.tokenType() == tokenType) {
       currentTokenIndex++;
-      if (currentTokenIndex < tokens.size()) {
-        currentToken = tokens.get(currentTokenIndex);
-      } else {
-        currentToken = null;
-      }
+      currentToken = currentTokenIndex < tokens.size() ? tokens.get(currentTokenIndex) : null;
     } else {
-      throw new RuntimeException("Error de sintaxis: se esperaba " + tokenType + " pero se obtuvo " + currentToken);
+      Logger.parserError("Syntax error: expected " + tokenType + " but got " + currentToken);
+      throw new RuntimeException("Syntax error: expected " + tokenType + " but got " + currentToken);
     }
   }
 
   public void parse() {
-    // Comenzamos con la regla de la gramática inicial: Program
     Program();
   }
 
+  // Program → Declaration Program'
   private void Program() {
-    // Program -> Declaration Program'
     Declaration();
     ProgramP();
   }
 
+  // Program' → Declaration Program' | epsilon
   private void ProgramP() {
-    // Program' -> Declaration Program' | epsilon
     if (currentToken != null && isTypeToken(currentToken)) {
       Declaration();
       ProgramP();
     }
-    // Si no hay más declaraciones, épsilon es válido
   }
 
+  // Declaration → Function | VarDecl
   private void Declaration() {
-    // Declaration -> Function | VarDecl
     if (currentToken != null && isTypeToken(currentToken)) {
       Type();
       if (currentToken != null && currentToken.tokenType() == IDENTIFIER) {
@@ -78,78 +68,80 @@ public class Parser {
     }
   }
 
+  // Function -> Type Identifier ( Params ) { StmtList }
   private void Function() {
-    // Function -> Type Identifier ( Params ) { StmtList }
     eat(L_PARENTHESIS);
     Params();
-    eat(Delimiter.R_PARENTHESIS);
+    eat(R_PARENTHESIS);
     eat(L_BRACE);
     StmtList();
-    eat(Delimiter.R_BRACE);
+    eat(R_BRACE);
   }
 
+  // Type -> IntType | BoolType | CharType | StringType | VoidType
   private void Type() {
-    // Type -> IntType | BoolType | CharType | StringType | VoidType
     if (isTypeToken(currentToken)) {
       eat(currentToken.tokenType());
     } else {
-      throw new RuntimeException("Error de sintaxis: se esperaba un tipo pero se obtuvo " + currentToken);
+      Logger.parserError("Syntax error: expected a type but got " + currentToken);
+      throw new RuntimeException("Syntax error: expected a type but got " + currentToken);
     }
   }
 
+  // Params → Type Identifier Params'
   private void Params() {
-    // Params -> Type Identifier Params'
     if (currentToken != null && isTypeToken(currentToken)) {
       Type();
       eat(IDENTIFIER);
       ParamsP();
     }
-    // Si no hay parámetros, épsilon es válido
   }
 
+  // Params' -> , Params | epsilon
   private void ParamsP() {
-    // Params' -> , Params | epsilon
-    if (currentToken != null && currentToken.tokenType() == Delimiter.COMMA) {
-      eat(Delimiter.COMMA);
+    if (currentToken != null && currentToken.tokenType() == COMMA) {
+      eat(COMMA);
       Params();
     }
-    // Si no hay más parámetros, épsilon es válido
   }
 
+  // VarDecl -> Type Identifier VarDecl'
   private void VarDecl() {
-    // VarDecl -> Type Identifier VarDecl'
     Type();
     eat(IDENTIFIER);
     VarDeclP();
   }
 
+  // VarDecl' -> ; | = Expression ;
   private void VarDeclP() {
-    // VarDecl' -> ; | = Expression ;
-    if (currentToken != null && currentToken.tokenType() == Operator.ASSIGNMENT) {
-      eat(Operator.ASSIGNMENT);
+    if (currentToken != null && currentToken.tokenType() == ASSIGNMENT) {
+      eat(ASSIGNMENT);
       Expression();
     }
-    eat(Delimiter.SEMICOLON);
+    eat(SEMICOLON);
   }
 
+  // StmtList -> Statement StmtList'
   private void StmtList() {
-    // StmtList -> Statement StmtList'
     Statement();
     StmtListP();
   }
 
+  // StmtList' -> Statement StmtList' | epsilon
   private void StmtListP() {
-    // StmtList' -> Statement StmtList' | epsilon
     if (currentToken != null && isStatementToken(currentToken)) {
       Statement();
       StmtListP();
     }
-    // Si no hay más declaraciones, épsilon es válido
   }
 
+  // Statement -> VarDecl | IfStmt | ForStmt | WhileStmt | ReturnStmt | ExprStmt | PrintStmt | { StmtList }
   private void Statement() {
-    // Statement -> VarDecl | IfStmt | ForStmt | ReturnStmt | ExprStmt | PrintStmt | { StmtList }
-    if (currentToken.tokenType().equals(INT) || currentToken.tokenType().equals(BOOL) || currentToken.tokenType().equals(CHAR) || currentToken.tokenType().equals(STRING) || currentToken.tokenType().equals(VOID)) {
+    if (currentToken.tokenType().equals(INT) ||
+        currentToken.tokenType().equals(BOOL) ||
+        currentToken.tokenType().equals(CHAR) ||
+        currentToken.tokenType().equals(STRING) ||
+        currentToken.tokenType().equals(VOID)) {
       VarDecl();
     } else if (currentToken.tokenType().equals(IF)) {
       IfStmt();
@@ -157,230 +149,240 @@ public class Parser {
       ForStmt();
     } else if (currentToken.tokenType().equals(WHILE)) {
       WhileStmt();
-    }else if (currentToken.tokenType().equals(RETURN)) {
+    } else if (currentToken.tokenType().equals(RETURN)) {
       ReturnStmt();
     } else if (currentToken.tokenType().equals(PRINT)) {
       PrintStmt();
     } else if (currentToken.tokenType().equals(L_BRACE)) {
       eat(L_BRACE);
       StmtList();
-      eat(Delimiter.R_BRACE);
+      eat(R_BRACE);
     } else {
       ExprStmt();
     }
   }
 
+  // IfStmt -> if ( Expression ) Statement IfStmt'
   private void IfStmt() {
-    // IfStmt -> if ( Expression ) Statement IfStmt'
-    eat(Keyword.IF);
+    eat(IF);
     eat(L_PARENTHESIS);
     Expression();
-    eat(Delimiter.R_PARENTHESIS);
+    eat(R_PARENTHESIS);
     Statement();
     IfStmtP();
   }
 
+  // IfStmt' -> else Statement | epsilon
   private void IfStmtP() {
-    // IfStmt' -> else Statement | epsilon
-    if (currentToken != null && currentToken.tokenType() == Keyword.ELSE) {
-      eat(Keyword.ELSE);
+    if (currentToken != null && currentToken.tokenType() == ELSE) {
+      eat(ELSE);
       Statement();
     }
-    // Si no hay else, épsilon es válido
   }
 
+  // ForStmt -> for ( ForInit Expression ; Expression ) Statement
   private void ForStmt() {
-    // ForStmt -> for ( ExprStmt Expression ; ExprStmt ) Statement
     eat(FOR);
     eat(L_PARENTHESIS);
-    ExprStmt();
+    ForInit();
     Expression();
-    eat(Delimiter.SEMICOLON);
-    ExprStmt();
-    eat(Delimiter.R_PARENTHESIS);
+    eat(SEMICOLON);
+    Expression();
+    eat(R_PARENTHESIS);
     Statement();
   }
 
-  private void WhileStmt(){
-    // WhileStmt -> while ( Expression ) Statement
+  // ForInit -> VarDecl | ExprStmt
+  private void ForInit() {
+    if (currentToken.tokenType() == INT ||
+        currentToken.tokenType() == BOOL ||
+        currentToken.tokenType() == CHAR ||
+        currentToken.tokenType() == STRING) {
+      VarDecl();
+    }
+    else {
+      ExprStmt();
+    }
+  }
+
+  // WhileStmt -> while ( Expression ) Statement
+  private void WhileStmt() {
     eat(WHILE);
     eat(L_PARENTHESIS);
     Expression();
-    eat(Delimiter.R_PARENTHESIS);
+    eat(R_PARENTHESIS);
     Statement();
   }
 
+  // ReturnStmt -> return Expression ; | return ;
   private void ReturnStmt() {
-    // ReturnStmt -> return Expression ;
     eat(RETURN);
-    Expression();
-    eat(Delimiter.SEMICOLON);
+    if (currentToken != null && currentToken.tokenType() != SEMICOLON) {
+      Expression();
+    }
+    eat(SEMICOLON);
   }
 
+  // PrintStmt -> print ( ExprList ) ;
   private void PrintStmt() {
-    // PrintStmt -> print ( ExprList ) ;
     eat(PRINT);
     eat(L_PARENTHESIS);
     ExprList();
-    eat(Delimiter.R_PARENTHESIS);
-    eat(Delimiter.SEMICOLON);
+    eat(R_PARENTHESIS);
+    eat(SEMICOLON);
   }
 
+  // ExprStmt -> Expression ; | ;
   private void ExprStmt() {
-    // ExprStmt -> Expression ; | ;
-    if (currentToken != null && currentToken.tokenType() != Delimiter.SEMICOLON) {
+    if (currentToken != null && currentToken.tokenType() != SEMICOLON) {
       Expression();
     }
-    eat(Delimiter.SEMICOLON);
+    eat(SEMICOLON);
   }
 
+  // ExprList -> Expression ExprList'
   private void ExprList() {
-    // ExprList -> Expression ExprList'
     Expression();
     ExprListP();
   }
 
+  // ExprList' -> , ExprList | epsilon
   private void ExprListP() {
-    // ExprList' -> , ExprList | epsilon
-    if (currentToken != null && currentToken.tokenType() == Delimiter.COMMA) {
-      eat(Delimiter.COMMA);
+    if (currentToken != null && currentToken.tokenType() == COMMA) {
+      eat(COMMA);
       ExprList();
     }
-    // Si no hay más expresiones, épsilon es válido
   }
 
+  // Expression -> OrExpr Expression'
   private void Expression() {
-    // Expression -> Identifier Expression' | OrExpr
-    if (currentToken.tokenType() == IDENTIFIER) {
-      eat(IDENTIFIER);
-      ExpressionP();
-    } else {
-      OrExpr();
-    }
+    OrExpr();
+    ExpressionP();
   }
 
+  // Expression' -> = Expression | epsilon
   private void ExpressionP() {
-    // Expression' -> = Expression | epsilon
-    if (currentToken != null && currentToken.tokenType() == Operator.ASSIGNMENT) {
-      eat(Operator.ASSIGNMENT);
+    if (currentToken != null && currentToken.tokenType() == ASSIGNMENT) {
+      eat(ASSIGNMENT);
       Expression();
     }
-    // Si no hay asignación, épsilon es válido
   }
 
+  // OrExpr -> AndExpr OrExpr'
   private void OrExpr() {
-    // OrExpr -> AndExpr OrExpr'
     AndExpr();
     OrExprP();
   }
 
+  // OrExpr' -> || AndExpr OrExpr' | epsilon
   private void OrExprP() {
-    // OrExpr' -> || AndExpr OrExpr' | epsilon
-    if (currentToken != null && currentToken.tokenType() == Operator.OR) {
-      eat(Operator.OR);
+    if (currentToken != null && currentToken.tokenType() == OR) {
+      eat(OR);
       AndExpr();
       OrExprP();
     }
-    // Si no hay más OR, épsilon es válido
   }
 
+  // AndExpr -> EqExpr AndExpr'
   private void AndExpr() {
-    // AndExpr -> EqExpr AndExpr'
     EqExpr();
     AndExprP();
   }
 
+  // AndExpr' -> && EqExpr AndExpr' | epsilon
   private void AndExprP() {
-    // AndExpr' -> && EqExpr AndExpr' | epsilon
-    if (currentToken != null && currentToken.tokenType() == Operator.AND) {
-      eat(Operator.AND);
+    if (currentToken != null && currentToken.tokenType() == AND) {
+      eat(AND);
       EqExpr();
       AndExprP();
     }
-    // Si no hay más AND, épsilon es válido
   }
 
+  // EqExpr -> RelExpr EqExpr'
   private void EqExpr() {
-    // EqExpr -> RelExpr EqExpr'
     RelExpr();
     EqExprP();
   }
 
+  // EqExpr' -> == RelExpr EqExpr' | != RelExpr EqExpr' | epsilon
   private void EqExprP() {
-    // EqExpr' -> == RelExpr EqExpr' | != RelExpr EqExpr' | epsilon
-    if (currentToken != null && (currentToken.tokenType() == Operator.EQUAL || currentToken.tokenType() == Operator.NOT_EQUAL)) {
+    if (currentToken != null &&
+       (currentToken.tokenType() == EQUAL || currentToken.tokenType() == NOT_EQUAL)) {
       eat(currentToken.tokenType());
       RelExpr();
       EqExprP();
     }
-    // Si no hay más comparaciones, épsilon es válido
   }
 
+  // RelExpr -> Expr RelExpr'
   private void RelExpr() {
-    // RelExpr -> Expr RelExpr'
     Expr();
     RelExprP();
   }
 
+  // RelExpr' -> < Expr RelExpr' | > Expr RelExpr' | <= Expr RelExpr' | >= Expr RelExpr' | epsilon
   private void RelExprP() {
-    // RelExpr' -> < Expr RelExpr' | > Expr RelExpr' | <= Expr RelExpr' | >= Expr RelExpr' | epsilon
-    if (currentToken != null && (currentToken.tokenType() == Operator.LESS_THAN || currentToken.tokenType() == Operator.GREATER_THAN ||
-      currentToken.tokenType() == Operator.LESS_THAN_OR_EQUAL || currentToken.tokenType() == Operator.GREATER_THAN_OR_EQUAL)) {
+    if (currentToken != null &&
+      (currentToken.tokenType() == LESS_THAN ||
+         currentToken.tokenType() == GREATER_THAN ||
+         currentToken.tokenType() == LESS_THAN_OR_EQUAL ||
+         currentToken.tokenType() == GREATER_THAN_OR_EQUAL)) {
       eat(currentToken.tokenType());
       Expr();
       RelExprP();
     }
-    // Si no hay más relaciones, épsilon es válido
   }
 
+  // Expr -> Term Expr'
   private void Expr() {
-    // Expr -> Term Expr'
     Term();
     ExprP();
   }
 
+  // Expr' -> + Term Expr' | - Term Expr' | epsilon
   private void ExprP() {
-    // Expr' -> + Term Expr' | - Term Expr' | epsilon
-    if (currentToken != null && (currentToken.tokenType() == Operator.ADDITION || currentToken.tokenType() == Operator.SUBTRACTION)) {
+    if (currentToken != null &&
+      (currentToken.tokenType() == ADDITION ||
+        currentToken.tokenType() == SUBTRACTION)) {
       eat(currentToken.tokenType());
       Term();
       ExprP();
     }
-    // Si no hay más términos, épsilon es válido
   }
 
+  // Term -> Unary Term'
   private void Term() {
-    // Term -> Unary Term'
     Unary();
     TermP();
   }
 
+  // Term' -> * Unary Term' | / Unary Term' | % Unary Term' | epsilon
   private void TermP() {
-    // Term' -> * Unary Term' | / Unary Term' | % Unary Term' | epsilon
-    if (currentToken != null && (currentToken.tokenType() == Operator.MULTIPLICATION || currentToken.tokenType() == Operator.DIVISION ||
-      currentToken.tokenType() == Operator.MODULUS)) {
+    if (currentToken != null &&
+      (currentToken.tokenType() == MULTIPLICATION ||
+        currentToken.tokenType() == DIVISION ||
+        currentToken.tokenType() == MODULUS)) {
       eat(currentToken.tokenType());
       Unary();
       TermP();
     }
-    // Si no hay más factores, épsilon es válido
   }
 
+  // Unary -> ! Unary | - Unary | Factor
   private void Unary() {
-    // Unary -> ! Unary | - Unary | Factor
-    if (currentToken.tokenType() == Operator.LOGICAL_NOT) {
-      eat(Operator.LOGICAL_NOT);
+    if (currentToken.tokenType() == LOGICAL_NOT) {
+      eat(LOGICAL_NOT);
       Unary();
-    } else if (currentToken.tokenType() == Operator.SUBTRACTION) {
-      eat(Operator.SUBTRACTION);
+    } else if (currentToken.tokenType() == SUBTRACTION) {
+      eat(SUBTRACTION);
       Unary();
     } else {
       Factor();
     }
   }
 
+  // Factor -> Identifier Factor' | IntLiteral | CharLiteral | StringLiteral | BoolLiteral | ( Expression )
   private void Factor() {
-    // Factor -> Identifier Factor' | IntLiteral | CharLiteral | StringLiteral | BoolLiteral | ( Expression )
     if (currentToken.tokenType().equals(IDENTIFIER)) {
       eat(IDENTIFIER);
       FactorP();
@@ -395,31 +397,38 @@ public class Parser {
     } else if (currentToken.tokenType().equals(L_PARENTHESIS)) {
       eat(L_PARENTHESIS);
       Expression();
-      eat(Delimiter.R_PARENTHESIS);
+      eat(R_PARENTHESIS);
     } else {
-      throw new RuntimeException("Error de sintaxis: se esperaba un factor pero se obtuvo " + currentToken);
+      Logger.parserError("Syntax error: expected a factor but got " + currentToken);
+      throw new RuntimeException("Syntax error: expected a factor but got " + currentToken);
     }
   }
 
+  // Factor' -> ( ExprList ) | epsilon
   private void FactorP() {
-    // Factor' -> ( ExprList ) | epsilon
     if (currentToken != null && currentToken.tokenType() == L_PARENTHESIS) {
       eat(L_PARENTHESIS);
       ExprList();
-      eat(Delimiter.R_PARENTHESIS);
+      eat(R_PARENTHESIS);
     }
-    // Si no hay llamada a función, épsilon es válido
   }
 
   private boolean isTypeToken(Token token) {
-    return token.tokenType() == Keyword.INT || token.tokenType() == Keyword.BOOL ||
-      token.tokenType() == Keyword.CHAR || token.tokenType() == Keyword.STRING ||
-      token.tokenType() == Keyword.VOID;
+    return token.tokenType() == INT ||
+           token.tokenType() == BOOL ||
+           token.tokenType() == CHAR ||
+           token.tokenType() == STRING ||
+           token.tokenType() == VOID;
   }
 
   private boolean isStatementToken(Token token) {
-    return isTypeToken(token) || token.tokenType() == Keyword.IF || token.tokenType() == FOR ||
-      token.tokenType() == RETURN || token.tokenType() == PRINT || token.tokenType() == WHILE ||
-      token.tokenType() == IDENTIFIER || token.tokenType() == L_BRACE;
+    return isTypeToken(token) ||
+           token.tokenType() == IF ||
+           token.tokenType() == FOR ||
+           token.tokenType() == RETURN ||
+           token.tokenType() == PRINT ||
+           token.tokenType() == WHILE ||
+           token.tokenType() == IDENTIFIER ||
+           token.tokenType() == L_BRACE;
   }
 }

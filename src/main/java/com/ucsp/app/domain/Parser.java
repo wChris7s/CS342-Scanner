@@ -419,7 +419,7 @@ public class Parser {
 
   private boolean isStatementToken(Token token) {
     return isTypeToken(token) || token.tokenType() == Keyword.IF || token.tokenType() == FOR ||
-      token.tokenType() == RETURN || token.tokenType() == PRINT ||
+      token.tokenType() == RETURN || token.tokenType() == PRINT || token.tokenType() == WHILE ||
       token.tokenType() == IDENTIFIER || token.tokenType() == L_BRACE;
   }
 }

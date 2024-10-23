@@ -2,9 +2,8 @@ package com.ucsp.app.domain;
 
 import com.ucsp.app.domain.logger.Logger;
 import com.ucsp.app.domain.token.Token;
+import com.ucsp.app.domain.token.reader.TokenReader;
 import com.ucsp.app.domain.token.types.TokenType;
-
-import java.util.List;
 
 import static com.ucsp.app.domain.token.types.impl.Category.*;
 import static com.ucsp.app.domain.token.types.impl.Delimiter.*;
@@ -12,23 +11,18 @@ import static com.ucsp.app.domain.token.types.impl.Keyword.*;
 import static com.ucsp.app.domain.token.types.impl.Operator.*;
 
 public class Parser {
-  private final List<Token> tokens;
 
-  private int currentTokenIndex;
+  private final TokenReader tokenReader;
 
-  private Token currentToken;
-
-  public Parser(List<Token> tokens) {
-    this.tokens = tokens;
-    this.currentTokenIndex = 0;
-    this.currentToken = !tokens.isEmpty() ? tokens.get(0) : null;
+  public Parser(TokenReader tokenReader) {
+    this.tokenReader = tokenReader;
   }
 
   private void eat(TokenType tokenType) {
-    Logger.parserDebug(currentToken, tokenType);
+    Token currentToken = tokenReader.getCurrentToken();
     if (currentToken != null && currentToken.tokenType() == tokenType) {
-      currentTokenIndex++;
-      currentToken = currentTokenIndex < tokens.size() ? tokens.get(currentTokenIndex) : null;
+      Logger.parserDebug(currentToken, tokenType);
+      tokenReader.advanceToken();
     } else {
       Logger.parserError("Syntax error: expected " + tokenType + " but got " + currentToken);
       throw new RuntimeException("Syntax error: expected " + tokenType + " but got " + currentToken);
@@ -47,7 +41,7 @@ public class Parser {
 
   // Program' → Declaration Program' | epsilon
   private void ProgramP() {
-    if (currentToken != null && isTypeToken(currentToken)) {
+    if (tokenReader.getCurrentToken() != null && isTypeToken(tokenReader.getCurrentToken())) {
       Declaration();
       ProgramP();
     }
@@ -55,11 +49,11 @@ public class Parser {
 
   // Declaration → Function | VarDecl
   private void Declaration() {
-    if (currentToken != null && isTypeToken(currentToken)) {
+    if (tokenReader.getCurrentToken() != null && isTypeToken(tokenReader.getCurrentToken())) {
       Type();
-      if (currentToken != null && currentToken.tokenType() == IDENTIFIER) {
+      if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == IDENTIFIER) {
         eat(IDENTIFIER);
-        if (currentToken != null && currentToken.tokenType() == L_PARENTHESIS) {
+        if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
           Function();
         } else {
           VarDeclP();
@@ -80,17 +74,17 @@ public class Parser {
 
   // Type -> IntType | BoolType | CharType | StringType | VoidType
   private void Type() {
-    if (isTypeToken(currentToken)) {
-      eat(currentToken.tokenType());
+    if (isTypeToken(tokenReader.getCurrentToken())) {
+      eat(tokenReader.getCurrentToken().tokenType());
     } else {
-      Logger.parserError("Syntax error: expected a type but got " + currentToken);
-      throw new RuntimeException("Syntax error: expected a type but got " + currentToken);
+      Logger.parserError("Syntax error: expected a type but got " + tokenReader.getCurrentToken());
+      throw new RuntimeException("Syntax error: expected a type but got " + tokenReader.getCurrentToken());
     }
   }
 
   // Params → Type Identifier Params'
   private void Params() {
-    if (currentToken != null && isTypeToken(currentToken)) {
+    if (tokenReader.getCurrentToken() != null && isTypeToken(tokenReader.getCurrentToken())) {
       Type();
       eat(IDENTIFIER);
       ParamsP();
@@ -99,7 +93,7 @@ public class Parser {
 
   // Params' -> , Params | epsilon
   private void ParamsP() {
-    if (currentToken != null && currentToken.tokenType() == COMMA) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == COMMA) {
       eat(COMMA);
       Params();
     }
@@ -114,7 +108,7 @@ public class Parser {
 
   // VarDecl' -> ; | = Expression ;
   private void VarDeclP() {
-    if (currentToken != null && currentToken.tokenType() == ASSIGNMENT) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
       eat(ASSIGNMENT);
       Expression();
     }
@@ -129,7 +123,7 @@ public class Parser {
 
   // StmtList' -> Statement StmtList' | epsilon
   private void StmtListP() {
-    if (currentToken != null && isStatementToken(currentToken)) {
+    if (tokenReader.getCurrentToken() != null && isStatementToken(tokenReader.getCurrentToken())) {
       Statement();
       StmtListP();
     }
@@ -137,23 +131,23 @@ public class Parser {
 
   // Statement -> VarDecl | IfStmt | ForStmt | WhileStmt | ReturnStmt | ExprStmt | PrintStmt | { StmtList }
   private void Statement() {
-    if (currentToken.tokenType().equals(INT) ||
-        currentToken.tokenType().equals(BOOL) ||
-        currentToken.tokenType().equals(CHAR) ||
-        currentToken.tokenType().equals(STRING) ||
-        currentToken.tokenType().equals(VOID)) {
+    if (tokenReader.getCurrentToken().tokenType().equals(INT) ||
+        tokenReader.getCurrentToken().tokenType().equals(BOOL) ||
+        tokenReader.getCurrentToken().tokenType().equals(CHAR) ||
+        tokenReader.getCurrentToken().tokenType().equals(STRING) ||
+        tokenReader.getCurrentToken().tokenType().equals(VOID)) {
       VarDecl();
-    } else if (currentToken.tokenType().equals(IF)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(IF)) {
       IfStmt();
-    } else if (currentToken.tokenType().equals(FOR)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(FOR)) {
       ForStmt();
-    } else if (currentToken.tokenType().equals(WHILE)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(WHILE)) {
       WhileStmt();
-    } else if (currentToken.tokenType().equals(RETURN)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(RETURN)) {
       ReturnStmt();
-    } else if (currentToken.tokenType().equals(PRINT)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(PRINT)) {
       PrintStmt();
-    } else if (currentToken.tokenType().equals(L_BRACE)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(L_BRACE)) {
       eat(L_BRACE);
       StmtList();
       eat(R_BRACE);
@@ -174,7 +168,7 @@ public class Parser {
 
   // IfStmt' -> else Statement | epsilon
   private void IfStmtP() {
-    if (currentToken != null && currentToken.tokenType() == ELSE) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ELSE) {
       eat(ELSE);
       Statement();
     }
@@ -194,10 +188,10 @@ public class Parser {
 
   // ForInit -> VarDecl | ExprStmt
   private void ForInit() {
-    if (currentToken.tokenType() == INT ||
-        currentToken.tokenType() == BOOL ||
-        currentToken.tokenType() == CHAR ||
-        currentToken.tokenType() == STRING) {
+    if (tokenReader.getCurrentToken().tokenType() == INT ||
+      tokenReader.getCurrentToken().tokenType() == BOOL ||
+      tokenReader.getCurrentToken().tokenType() == CHAR ||
+      tokenReader.getCurrentToken().tokenType() == STRING) {
       VarDecl();
     }
     else {
@@ -217,7 +211,7 @@ public class Parser {
   // ReturnStmt -> return Expression ; | return ;
   private void ReturnStmt() {
     eat(RETURN);
-    if (currentToken != null && currentToken.tokenType() != SEMICOLON) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != SEMICOLON) {
       Expression();
     }
     eat(SEMICOLON);
@@ -234,7 +228,7 @@ public class Parser {
 
   // ExprStmt -> Expression ; | ;
   private void ExprStmt() {
-    if (currentToken != null && currentToken.tokenType() != SEMICOLON) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != SEMICOLON) {
       Expression();
     }
     eat(SEMICOLON);
@@ -248,7 +242,7 @@ public class Parser {
 
   // ExprList' -> , ExprList | epsilon
   private void ExprListP() {
-    if (currentToken != null && currentToken.tokenType() == COMMA) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == COMMA) {
       eat(COMMA);
       ExprList();
     }
@@ -262,7 +256,7 @@ public class Parser {
 
   // Expression' -> = Expression | epsilon
   private void ExpressionP() {
-    if (currentToken != null && currentToken.tokenType() == ASSIGNMENT) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
       eat(ASSIGNMENT);
       Expression();
     }
@@ -276,7 +270,7 @@ public class Parser {
 
   // OrExpr' -> || AndExpr OrExpr' | epsilon
   private void OrExprP() {
-    if (currentToken != null && currentToken.tokenType() == OR) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == OR) {
       eat(OR);
       AndExpr();
       OrExprP();
@@ -291,7 +285,7 @@ public class Parser {
 
   // AndExpr' -> && EqExpr AndExpr' | epsilon
   private void AndExprP() {
-    if (currentToken != null && currentToken.tokenType() == AND) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == AND) {
       eat(AND);
       EqExpr();
       AndExprP();
@@ -306,9 +300,9 @@ public class Parser {
 
   // EqExpr' -> == RelExpr EqExpr' | != RelExpr EqExpr' | epsilon
   private void EqExprP() {
-    if (currentToken != null &&
-       (currentToken.tokenType() == EQUAL || currentToken.tokenType() == NOT_EQUAL)) {
-      eat(currentToken.tokenType());
+    if (tokenReader.getCurrentToken() != null &&
+       (tokenReader.getCurrentToken().tokenType() == EQUAL || tokenReader.getCurrentToken().tokenType() == NOT_EQUAL)) {
+      eat(tokenReader.getCurrentToken().tokenType());
       RelExpr();
       EqExprP();
     }
@@ -322,12 +316,12 @@ public class Parser {
 
   // RelExpr' -> < Expr RelExpr' | > Expr RelExpr' | <= Expr RelExpr' | >= Expr RelExpr' | epsilon
   private void RelExprP() {
-    if (currentToken != null &&
-      (currentToken.tokenType() == LESS_THAN ||
-         currentToken.tokenType() == GREATER_THAN ||
-         currentToken.tokenType() == LESS_THAN_OR_EQUAL ||
-         currentToken.tokenType() == GREATER_THAN_OR_EQUAL)) {
-      eat(currentToken.tokenType());
+    if (tokenReader.getCurrentToken() != null &&
+      (tokenReader.getCurrentToken().tokenType() == LESS_THAN ||
+         tokenReader.getCurrentToken().tokenType() == GREATER_THAN ||
+         tokenReader.getCurrentToken().tokenType() == LESS_THAN_OR_EQUAL ||
+         tokenReader.getCurrentToken().tokenType() == GREATER_THAN_OR_EQUAL)) {
+      eat(tokenReader.getCurrentToken().tokenType());
       Expr();
       RelExprP();
     }
@@ -341,10 +335,10 @@ public class Parser {
 
   // Expr' -> + Term Expr' | - Term Expr' | epsilon
   private void ExprP() {
-    if (currentToken != null &&
-      (currentToken.tokenType() == ADDITION ||
-        currentToken.tokenType() == SUBTRACTION)) {
-      eat(currentToken.tokenType());
+    if (tokenReader.getCurrentToken() != null &&
+      (tokenReader.getCurrentToken().tokenType() == ADDITION ||
+        tokenReader.getCurrentToken().tokenType() == SUBTRACTION)) {
+      eat(tokenReader.getCurrentToken().tokenType());
       Term();
       ExprP();
     }
@@ -358,11 +352,11 @@ public class Parser {
 
   // Term' -> * Unary Term' | / Unary Term' | % Unary Term' | epsilon
   private void TermP() {
-    if (currentToken != null &&
-      (currentToken.tokenType() == MULTIPLICATION ||
-        currentToken.tokenType() == DIVISION ||
-        currentToken.tokenType() == MODULUS)) {
-      eat(currentToken.tokenType());
+    if (tokenReader.getCurrentToken() != null &&
+      (tokenReader.getCurrentToken().tokenType() == MULTIPLICATION ||
+        tokenReader.getCurrentToken().tokenType() == DIVISION ||
+        tokenReader.getCurrentToken().tokenType() == MODULUS)) {
+      eat(tokenReader.getCurrentToken().tokenType());
       Unary();
       TermP();
     }
@@ -370,10 +364,10 @@ public class Parser {
 
   // Unary -> ! Unary | - Unary | Factor
   private void Unary() {
-    if (currentToken.tokenType() == LOGICAL_NOT) {
+    if (tokenReader.getCurrentToken().tokenType() == LOGICAL_NOT) {
       eat(LOGICAL_NOT);
       Unary();
-    } else if (currentToken.tokenType() == SUBTRACTION) {
+    } else if (tokenReader.getCurrentToken().tokenType() == SUBTRACTION) {
       eat(SUBTRACTION);
       Unary();
     } else {
@@ -383,30 +377,30 @@ public class Parser {
 
   // Factor -> Identifier Factor' | IntLiteral | CharLiteral | StringLiteral | BoolLiteral | ( Expression )
   private void Factor() {
-    if (currentToken.tokenType().equals(IDENTIFIER)) {
+    if (tokenReader.getCurrentToken().tokenType().equals(IDENTIFIER)) {
       eat(IDENTIFIER);
       FactorP();
-    } else if (currentToken.tokenType().equals(INT_LITERAL)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(INT_LITERAL)) {
       eat(INT_LITERAL);
-    } else if (currentToken.tokenType().equals(CHAR_LITERAL)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(CHAR_LITERAL)) {
       eat(CHAR_LITERAL);
-    } else if (currentToken.tokenType().equals(STRING_LITERAL)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(STRING_LITERAL)) {
       eat(STRING_LITERAL);
-    } else if (currentToken.tokenType().equals(BOOL_LITERAL)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(BOOL_LITERAL)) {
       eat(BOOL_LITERAL);
-    } else if (currentToken.tokenType().equals(L_PARENTHESIS)) {
+    } else if (tokenReader.getCurrentToken().tokenType().equals(L_PARENTHESIS)) {
       eat(L_PARENTHESIS);
       Expression();
       eat(R_PARENTHESIS);
     } else {
-      Logger.parserError("Syntax error: expected a factor but got " + currentToken);
-      throw new RuntimeException("Syntax error: expected a factor but got " + currentToken);
+      Logger.parserError("Syntax error: expected a factor but got " + tokenReader.getCurrentToken());
+      throw new RuntimeException("Syntax error: expected a factor but got " + tokenReader.getCurrentToken());
     }
   }
 
   // Factor' -> ( ExprList ) | epsilon
   private void FactorP() {
-    if (currentToken != null && currentToken.tokenType() == L_PARENTHESIS) {
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
       eat(L_PARENTHESIS);
       ExprList();
       eat(R_PARENTHESIS);

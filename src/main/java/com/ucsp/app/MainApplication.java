@@ -6,6 +6,8 @@ import com.ucsp.app.domain.processors.TokenProcessor;
 import com.ucsp.app.domain.processors.impl.*;
 import com.ucsp.app.domain.reader.Reader;
 import com.ucsp.app.domain.token.Token;
+import com.ucsp.app.domain.token.reader.TokenReader;
+import com.ucsp.app.domain.token.reader.impl.TokenReaderImpl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,7 +31,8 @@ public class MainApplication {
 
     System.out.print("\n\n");
 
-    Parser parser = new Parser(tokens);
+    TokenReader tokenReader = new TokenReaderImpl(tokens);
+    Parser parser = new Parser(tokenReader);
     parser.parse();
   }
 }

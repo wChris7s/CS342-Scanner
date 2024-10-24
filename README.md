@@ -2,7 +2,7 @@
 ```
 Program -> Declaration Program'
 Program' -> Declaration Program' 
-          | ϵ
+          | EOF
 Declaration -> Function
              | VarDecl
 Function -> Type Identifier ( Params ) { StmtList }
@@ -40,6 +40,7 @@ ReturnStmt -> return Expression ;
 PrintStmt -> print ( ExprList ) ;
 ExprStmt -> Identifier ++ ; 
           | Identifier -- ;
+          | Identifier ** ;
           | Expression ; 
           | ;
 ExprList -> Expression ExprList'

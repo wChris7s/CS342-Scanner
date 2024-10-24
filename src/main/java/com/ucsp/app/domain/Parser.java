@@ -31,6 +31,10 @@ public class Parser {
 
   public void parse() {
     Program();
+    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != EOF) {
+      Logger.parserError("Syntax error: expected EOF but found extra tokens");
+      throw new RuntimeException("Syntax error: expected EOF but found extra tokens");
+    }
   }
 
   // Program → Declaration Program'
@@ -41,11 +45,18 @@ public class Parser {
 
   // Program' → Declaration Program' | epsilon
   private void ProgramP() {
-    if (tokenReader.getCurrentToken() != null && isTypeToken(tokenReader.getCurrentToken())) {
+    Token currentToken = tokenReader.getCurrentToken();
+    if (currentToken != null && isTypeToken(currentToken)) {
       Declaration();
       ProgramP();
+    } else if (currentToken != null && currentToken.tokenType() == EOF) {
+      Logger.parserDebug(currentToken, EOF);
+    } else {
+      Logger.parserError("Syntax error: expected EOF but got " + currentToken);
+      throw new RuntimeException("Syntax error: expected EOF but got " + currentToken);
     }
   }
+
 
   // Declaration → Function | VarDecl
   private void Declaration() {
@@ -132,10 +143,10 @@ public class Parser {
   // Statement -> VarDecl | IfStmt | ForStmt | WhileStmt | ReturnStmt | ExprStmt | PrintStmt | { StmtList }
   private void Statement() {
     if (tokenReader.getCurrentToken().tokenType().equals(INT) ||
-        tokenReader.getCurrentToken().tokenType().equals(BOOL) ||
-        tokenReader.getCurrentToken().tokenType().equals(CHAR) ||
-        tokenReader.getCurrentToken().tokenType().equals(STRING) ||
-        tokenReader.getCurrentToken().tokenType().equals(VOID)) {
+      tokenReader.getCurrentToken().tokenType().equals(BOOL) ||
+      tokenReader.getCurrentToken().tokenType().equals(CHAR) ||
+      tokenReader.getCurrentToken().tokenType().equals(STRING) ||
+      tokenReader.getCurrentToken().tokenType().equals(VOID)) {
       VarDecl();
     } else if (tokenReader.getCurrentToken().tokenType().equals(IF)) {
       IfStmt();
@@ -193,8 +204,7 @@ public class Parser {
       tokenReader.getCurrentToken().tokenType() == CHAR ||
       tokenReader.getCurrentToken().tokenType() == STRING) {
       VarDecl();
-    }
-    else {
+    } else {
       ExprStmt();
     }
   }
@@ -229,22 +239,21 @@ public class Parser {
   // ExprStmt -> Identifier ++ ; | Identifier -- ; | Expression ; | ;
   private void ExprStmt() {
     Token currentToken = tokenReader.getCurrentToken();
-
     if (currentToken != null && currentToken.tokenType() == IDENTIFIER) {
       eat(IDENTIFIER);
-      if (tokenReader.getCurrentToken().tokenType() == INCREMENT) {
+      if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
+        FactorP();
+        eat(SEMICOLON);
+      } else if (tokenReader.getCurrentToken().tokenType() == INCREMENT) {
         eat(INCREMENT);
         eat(SEMICOLON);
-      }
-      else if (tokenReader.getCurrentToken().tokenType() == DECREMENT) {
+      } else if (tokenReader.getCurrentToken().tokenType() == DECREMENT) {
         eat(DECREMENT);
         eat(SEMICOLON);
-      }
-      else if (tokenReader.getCurrentToken().tokenType() == SQUARE) {
+      } else if (tokenReader.getCurrentToken().tokenType() == SQUARE) {
         eat(SQUARE);
         eat(SEMICOLON);
-      }
-      else {
+      } else {
         eat(SEMICOLON);
       }
     } else if (currentToken != null && currentToken.tokenType() != SEMICOLON) {
@@ -322,7 +331,7 @@ public class Parser {
   // EqExpr' -> == RelExpr EqExpr' | != RelExpr EqExpr' | epsilon
   private void EqExprP() {
     if (tokenReader.getCurrentToken() != null &&
-       (tokenReader.getCurrentToken().tokenType() == EQUAL || tokenReader.getCurrentToken().tokenType() == NOT_EQUAL)) {
+      (tokenReader.getCurrentToken().tokenType() == EQUAL || tokenReader.getCurrentToken().tokenType() == NOT_EQUAL)) {
       eat(tokenReader.getCurrentToken().tokenType());
       RelExpr();
       EqExprP();
@@ -339,9 +348,9 @@ public class Parser {
   private void RelExprP() {
     if (tokenReader.getCurrentToken() != null &&
       (tokenReader.getCurrentToken().tokenType() == LESS_THAN ||
-         tokenReader.getCurrentToken().tokenType() == GREATER_THAN ||
-         tokenReader.getCurrentToken().tokenType() == LESS_THAN_OR_EQUAL ||
-         tokenReader.getCurrentToken().tokenType() == GREATER_THAN_OR_EQUAL)) {
+        tokenReader.getCurrentToken().tokenType() == GREATER_THAN ||
+        tokenReader.getCurrentToken().tokenType() == LESS_THAN_OR_EQUAL ||
+        tokenReader.getCurrentToken().tokenType() == GREATER_THAN_OR_EQUAL)) {
       eat(tokenReader.getCurrentToken().tokenType());
       Expr();
       RelExprP();
@@ -424,27 +433,29 @@ public class Parser {
   private void FactorP() {
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
       eat(L_PARENTHESIS);
-      ExprList();
+      if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != R_PARENTHESIS) {
+        ExprList();
+      }
       eat(R_PARENTHESIS);
     }
   }
 
   private boolean isTypeToken(Token token) {
     return token.tokenType() == INT ||
-           token.tokenType() == BOOL ||
-           token.tokenType() == CHAR ||
-           token.tokenType() == STRING ||
-           token.tokenType() == VOID;
+      token.tokenType() == BOOL ||
+      token.tokenType() == CHAR ||
+      token.tokenType() == STRING ||
+      token.tokenType() == VOID;
   }
 
   private boolean isStatementToken(Token token) {
     return isTypeToken(token) ||
-           token.tokenType() == IF ||
-           token.tokenType() == FOR ||
-           token.tokenType() == RETURN ||
-           token.tokenType() == PRINT ||
-           token.tokenType() == WHILE ||
-           token.tokenType() == IDENTIFIER ||
-           token.tokenType() == L_BRACE;
+      token.tokenType() == IF ||
+      token.tokenType() == FOR ||
+      token.tokenType() == RETURN ||
+      token.tokenType() == PRINT ||
+      token.tokenType() == WHILE ||
+      token.tokenType() == IDENTIFIER ||
+      token.tokenType() == L_BRACE;
   }
 }

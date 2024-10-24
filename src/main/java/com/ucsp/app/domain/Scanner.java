@@ -50,7 +50,7 @@ public class Scanner {
         Logger.updatePosition(reader.getChar());
       }
     }
-    tokens.add(new Token(Category.EOF, ""));
+    tokens.add(new Token(Category.EOF, "$"));
     reader.close();
   }
 

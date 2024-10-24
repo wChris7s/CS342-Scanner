@@ -5,10 +5,10 @@ import com.ucsp.app.domain.Scanner;
 import com.ucsp.app.domain.processors.TokenProcessor;
 import com.ucsp.app.domain.processors.impl.*;
 import com.ucsp.app.domain.reader.Reader;
-import com.ucsp.app.domain.token.Token;
+import com.ucsp.app.domain.token.reader.TokenReader;
+import com.ucsp.app.domain.token.reader.impl.TokenReaderImpl;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainApplication {
@@ -23,13 +23,13 @@ public class MainApplication {
       new OperatorProcessor(reader),
       new StringProcessor(reader),
       new IntegerProcessor(reader));
-    List<Token> tokens = new ArrayList<>();
-    Scanner scanner = new Scanner(processors, tokens, reader);
+    Scanner scanner = new Scanner(processors, reader);
     scanner.tokenize();
 
     System.out.print("\n\n");
 
-    Parser parser = new Parser(tokens);
+    TokenReader tokenReader = new TokenReaderImpl(scanner.getTokens());
+    Parser parser = new Parser(tokenReader);
     parser.parse();
   }
 }

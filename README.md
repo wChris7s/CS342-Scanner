@@ -38,12 +38,13 @@ WhileStmt -> while ( Expression ) Statement
 ReturnStmt -> return Expression ; 
             | return ;
 PrintStmt -> print ( ExprList ) ;
-ExprStmt -> Expression ; 
+ExprStmt -> Identifier ++ ; 
+          | Identifier -- ;
+          | Expression ; 
           | ;
 ExprList -> Expression ExprList'
 ExprList' -> , ExprList 
            | ϵ
-
 Expression -> OrExpr Expression'
 Expression' -> = Expression 
              | ϵ

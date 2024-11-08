@@ -30,6 +30,6 @@ public class MainApplication {
 
     TokenReader tokenReader = new TokenReaderImpl(scanner.getTokens());
     Parser parser = new Parser(tokenReader);
-    parser.parse();
+    parser.parseAndDisplayAST();
   }
 }

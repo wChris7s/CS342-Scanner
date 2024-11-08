@@ -58,3 +58,11 @@ public class Scanner {
     return tokens;
   }
 }
+
+/**
+ * Recuperación de errores:
+ *  Definir un conjunto de sincronización, este conjunto pueden ser los ';', etc.
+ *  La idea es que si el parser encuentra un error debe seguir avanzando.
+ *  Se debe mostrar el debug de errores.
+ * Realizar el árbol de sintaxis.
+ */

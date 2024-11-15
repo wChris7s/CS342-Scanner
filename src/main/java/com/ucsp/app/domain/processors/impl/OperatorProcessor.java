@@ -1,6 +1,6 @@
 package com.ucsp.app.domain.processors.impl;
 
-import com.ucsp.app.domain.logger.Logger;
+import com.ucsp.app.domain.logger.AppLogger;
 import com.ucsp.app.domain.reader.Reader;
 import com.ucsp.app.domain.processors.TokenProcessor;
 import com.ucsp.app.domain.token.Token;
@@ -19,16 +19,16 @@ public class OperatorProcessor implements TokenProcessor {
   @Override
   public Token process() throws IOException {
     StringBuilder tokenBuilder = new StringBuilder();
-    int currentColumn = Logger.getColumn();
+    int currentColumn = AppLogger.getColumn();
     tokenBuilder.append(reader.peekChar());
-    Logger.updatePosition(reader.getChar());
+    AppLogger.updatePosition(reader.getChar());
     if (Operator.contains(tokenBuilder.toString() + reader.peekChar())) {
       tokenBuilder.append(reader.peekChar());
-      Logger.updatePosition(reader.getChar());
+      AppLogger.updatePosition(reader.getChar());
     }
     String processedToken = tokenBuilder.toString();
     Operator operator = Operator.fromString(processedToken);
-    Logger.debug(operator, processedToken, currentColumn);
+    AppLogger.debug(operator, processedToken, currentColumn);
     return new Token(operator, processedToken);
   }
 

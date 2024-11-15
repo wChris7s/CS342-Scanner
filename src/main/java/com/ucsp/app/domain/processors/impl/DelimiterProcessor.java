@@ -1,6 +1,6 @@
 package com.ucsp.app.domain.processors.impl;
 
-import com.ucsp.app.domain.logger.Logger;
+import com.ucsp.app.domain.logger.AppLogger;
 import com.ucsp.app.domain.reader.Reader;
 import com.ucsp.app.domain.processors.TokenProcessor;
 import com.ucsp.app.domain.token.Token;
@@ -18,11 +18,11 @@ public class DelimiterProcessor implements TokenProcessor {
 
   @Override
   public Token process() throws IOException {
-    int currentColumn = Logger.getColumn();
+    int currentColumn = AppLogger.getColumn();
     char processedToken = reader.getChar();
-    Logger.updatePosition(processedToken);
+    AppLogger.updatePosition(processedToken);
     Delimiter delimiter = Delimiter.fromString(String.valueOf(processedToken));
-    Logger.debug(delimiter, delimiter.value(), currentColumn);
+    AppLogger.debug(delimiter, delimiter.value(), currentColumn);
     return new Token(delimiter, delimiter.value());
   }
 

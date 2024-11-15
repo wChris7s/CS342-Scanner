@@ -1,6 +1,6 @@
 package com.ucsp.app.domain.processors.impl;
 
-import com.ucsp.app.domain.logger.Logger;
+import com.ucsp.app.domain.logger.AppLogger;
 import com.ucsp.app.domain.processors.TokenProcessor;
 import com.ucsp.app.domain.reader.Reader;
 import com.ucsp.app.domain.token.Token;
@@ -19,15 +19,15 @@ public class IntegerProcessor implements TokenProcessor {
   @Override
   public Token process() throws IOException {
     StringBuilder tokenBuilder = new StringBuilder();
-    int currentColumn = Logger.getColumn();
+    int currentColumn = AppLogger.getColumn();
 
     while (reader.hasNext() && Character.isDigit(reader.peekChar())) {
       tokenBuilder.append(reader.peekChar());
-      Logger.updatePosition(reader.getChar());
+      AppLogger.updatePosition(reader.getChar());
     }
 
     String literalValue = tokenBuilder.toString();
-    Logger.debug(Category.INT_LITERAL, literalValue, currentColumn);
+    AppLogger.debug(Category.INT_LITERAL, literalValue, currentColumn);
     return new Token(Category.INT_LITERAL, literalValue);  // Especificamos INT_LITERAL
   }
 

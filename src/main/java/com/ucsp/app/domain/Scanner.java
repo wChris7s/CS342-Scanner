@@ -1,6 +1,6 @@
 package com.ucsp.app.domain;
 
-import com.ucsp.app.domain.logger.Logger;
+import com.ucsp.app.domain.logger.AppLogger;
 import com.ucsp.app.domain.processors.TokenProcessor;
 import com.ucsp.app.domain.processors.impl.CommentProcessor;
 import com.ucsp.app.domain.reader.Reader;
@@ -33,25 +33,29 @@ public class Scanner {
   public void tokenize() throws IOException {
     while (reader.hasNext()) {
       char currentChar = reader.peekChar();
-      boolean isProcessed = false;
-      for (TokenProcessor processor : tokenProcessors) {
-        if (processor.supports(currentChar)) {
-          isProcessed = true;
-          var processedToken = processor.process();
-          if (!(processor instanceof CommentProcessor && Objects.isNull(processedToken))) {
-            // Whether the processed token is a comment.
-            tokens.add(processedToken);
-          }
-          break;
-        }
-      }
-      if (!isProcessed) {
-        if (isUnrecognizedCharacter(currentChar)) Logger.error(String.valueOf(currentChar));
-        Logger.updatePosition(reader.getChar());
+      if (!isProcessedToken(currentChar)) {
+        if (isUnrecognizedCharacter(currentChar))
+          AppLogger.error(String.valueOf(currentChar));
+        AppLogger.updatePosition(reader.getChar());
       }
     }
     tokens.add(new Token(Category.EOF, "$"));
     reader.close();
+  }
+
+  private boolean isProcessedToken(char currentChar) throws IOException {
+    boolean isProcessed = false;
+    for (TokenProcessor processor : tokenProcessors) {
+      if (processor.supports(currentChar)) {
+        isProcessed = true;
+        var processedToken = processor.process();
+        if (!(processor instanceof CommentProcessor && Objects.isNull(processedToken))) {
+          tokens.add(processedToken);
+        }
+        break;
+      }
+    }
+    return isProcessed;
   }
 
   public List<Token> getTokens() {

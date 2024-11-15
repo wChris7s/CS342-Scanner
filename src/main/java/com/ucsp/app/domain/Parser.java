@@ -1,9 +1,11 @@
 package com.ucsp.app.domain;
 
-import com.ucsp.app.domain.logger.Logger;
+import com.ucsp.app.domain.logger.AppLogger;
 import com.ucsp.app.domain.token.Token;
 import com.ucsp.app.domain.token.reader.TokenReader;
 import com.ucsp.app.domain.token.types.TokenType;
+import com.ucsp.app.domain.tree.AstNode;
+import com.ucsp.app.domain.tree.AstVisualizer;
 
 import static com.ucsp.app.domain.token.types.impl.Category.*;
 import static com.ucsp.app.domain.token.types.impl.Delimiter.*;
@@ -21,228 +23,275 @@ public class Parser {
   private void eat(TokenType tokenType) {
     Token currentToken = tokenReader.getCurrentToken();
     if (currentToken != null && currentToken.tokenType() == tokenType) {
-      Logger.parserDebug(currentToken, tokenType);
+      AppLogger.parserDebug(currentToken, tokenType);
       tokenReader.advanceToken();
     } else {
-      Logger.parserError("Syntax error: expected " + tokenType + " but got " + currentToken);
+      AppLogger.parserError("Syntax error: expected " + tokenType + " but got " + currentToken);
       throw new RuntimeException("Syntax error: expected " + tokenType + " but got " + currentToken);
     }
   }
 
   public void parse() {
-    Program();
+    AstNode root = Program();
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != EOF) {
-      Logger.parserError("Syntax error: expected EOF but found extra tokens");
+      AppLogger.parserError("Syntax error: expected EOF but found extra tokens");
       throw new RuntimeException("Syntax error: expected EOF but found extra tokens");
     }
+
+    AstVisualizer visualizer = new AstVisualizer();
+    visualizer.visualize(root, "ast");
   }
 
   // Program → Declaration Program'
-  private void Program() {
-    Declaration();
-    ProgramP();
+  private AstNode Program() {
+    AstNode node = new AstNode("Program");
+    node.addChild(Declaration());
+    node.addChild(ProgramP());
+    return node;
   }
 
   // Program' → Declaration Program' | epsilon
-  private void ProgramP() {
+  private AstNode ProgramP() {
+    AstNode node = new AstNode("Program'");
     Token currentToken = tokenReader.getCurrentToken();
+
     if (currentToken != null && isTypeToken(currentToken)) {
-      Declaration();
-      ProgramP();
+      node.addChild(Declaration());
+      node.addChild(ProgramP());
     } else if (currentToken != null && currentToken.tokenType() == EOF) {
-      Logger.parserDebug(currentToken, EOF);
+      AppLogger.parserDebug(currentToken, EOF);
     } else {
-      Logger.parserError("Syntax error: expected EOF but got " + currentToken);
+      AppLogger.parserError("Syntax error: expected EOF but got " + currentToken);
       throw new RuntimeException("Syntax error: expected EOF but got " + currentToken);
     }
+    return node;
   }
 
 
   // Declaration → Function | VarDecl
-  private void Declaration() {
+  private AstNode Declaration() {
+    AstNode node = new AstNode("Declaration'");
     if (tokenReader.getCurrentToken() != null && isTypeToken(tokenReader.getCurrentToken())) {
-      Type();
+      node.addChild(Type());
       if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == IDENTIFIER) {
+        AstNode identifierNode = new AstNode(tokenReader.getCurrentToken().tokenValue());
         eat(IDENTIFIER);
+        node.addChild(identifierNode);
         if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
-          Function();
+          node.addChild(Function());
         } else {
-          VarDeclP();
+          node.addChild(VarDeclP());
         }
       }
     }
+    return node;
   }
 
   // Function -> Type Identifier ( Params ) { StmtList }
-  private void Function() {
+  private AstNode Function() {
+    AstNode node = new AstNode("Function");
     eat(L_PARENTHESIS);
-    Params();
+    node.addChild(Params());
     eat(R_PARENTHESIS);
     eat(L_BRACE);
-    StmtList();
+    node.addChild(StmtList());
     eat(R_BRACE);
+    return node;
   }
 
   // Type -> IntType | BoolType | CharType | StringType | VoidType
-  private void Type() {
+  private AstNode Type() {
     if (isTypeToken(tokenReader.getCurrentToken())) {
+      AstNode node = new AstNode(tokenReader.getCurrentToken().tokenValue());
       eat(tokenReader.getCurrentToken().tokenType());
+      return node;
     } else {
-      Logger.parserError("Syntax error: expected a type but got " + tokenReader.getCurrentToken());
+      AppLogger.parserError("Syntax error: expected a type but got " + tokenReader.getCurrentToken());
       throw new RuntimeException("Syntax error: expected a type but got " + tokenReader.getCurrentToken());
     }
   }
 
   // Params → Type Identifier Params'
-  private void Params() {
+  private AstNode Params() {
+    AstNode node = new AstNode("Params");
     if (tokenReader.getCurrentToken() != null && isTypeToken(tokenReader.getCurrentToken())) {
-      Type();
+      node.addChild(Type());
+      AstNode identifierNode = new AstNode(tokenReader.getCurrentToken().tokenValue());
       eat(IDENTIFIER);
-      ParamsP();
+      node.addChild(identifierNode);
+      node.addChild(ParamsP());
     }
+    return node;
   }
 
   // Params' -> , Params | epsilon
-  private void ParamsP() {
+  private AstNode ParamsP() {
+    AstNode node = new AstNode("Params'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == COMMA) {
       eat(COMMA);
-      Params();
+      node.addChild(Params());
     }
+    return node;
   }
 
   // VarDecl -> Type Identifier VarDecl'
-  private void VarDecl() {
-    Type();
+  private AstNode VarDecl() {
+    AstNode node = new AstNode("VarDecl");
+    node.addChild(Type());
+    AstNode identifierNode = new AstNode(tokenReader.getCurrentToken().tokenValue());
     eat(IDENTIFIER);
-    VarDeclP();
+    node.addChild(identifierNode);
+    node.addChild(VarDeclP());
+    return node;
   }
 
   // VarDecl' -> ; | = Expression ;
-  private void VarDeclP() {
+  private AstNode VarDeclP() {
+    AstNode node = new AstNode("VarDecl'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
       eat(ASSIGNMENT);
-      Expression();
+      node.addChild(Expression());
     }
     eat(SEMICOLON);
+    return node;
   }
 
   // StmtList -> Statement StmtList'
-  private void StmtList() {
-    Statement();
-    StmtListP();
+  private AstNode StmtList() {
+    AstNode node = new AstNode("StmtList");
+    node.addChild(Statement());
+    node.addChild(StmtListP());
+    return node;
   }
 
   // StmtList' -> Statement StmtList' | epsilon
-  private void StmtListP() {
+  private AstNode StmtListP() {
+    AstNode node = new AstNode("StmtList'");
     if (tokenReader.getCurrentToken() != null && isStatementToken(tokenReader.getCurrentToken())) {
-      Statement();
-      StmtListP();
+      node.addChild(Statement());
+      node.addChild(StmtListP());
     }
+    return node;
   }
 
   // Statement -> VarDecl | IfStmt | ForStmt | WhileStmt | ReturnStmt | ExprStmt | PrintStmt | { StmtList }
-  private void Statement() {
-    if (tokenReader.getCurrentToken().tokenType().equals(INT) ||
-      tokenReader.getCurrentToken().tokenType().equals(BOOL) ||
-      tokenReader.getCurrentToken().tokenType().equals(CHAR) ||
-      tokenReader.getCurrentToken().tokenType().equals(STRING) ||
-      tokenReader.getCurrentToken().tokenType().equals(VOID)) {
-      VarDecl();
-    } else if (tokenReader.getCurrentToken().tokenType().equals(IF)) {
-      IfStmt();
-    } else if (tokenReader.getCurrentToken().tokenType().equals(FOR)) {
-      ForStmt();
-    } else if (tokenReader.getCurrentToken().tokenType().equals(WHILE)) {
-      WhileStmt();
-    } else if (tokenReader.getCurrentToken().tokenType().equals(RETURN)) {
-      ReturnStmt();
-    } else if (tokenReader.getCurrentToken().tokenType().equals(PRINT)) {
-      PrintStmt();
-    } else if (tokenReader.getCurrentToken().tokenType().equals(L_BRACE)) {
+  private AstNode Statement() {
+    AstNode node = new AstNode("Statement");
+    Token currentToken = tokenReader.getCurrentToken();
+
+    if (isTypeToken(currentToken)) {
+      node.addChild(VarDecl());
+    } else if (currentToken.tokenType() == IF) {
+      node.addChild(IfStmt());
+    } else if (currentToken.tokenType() == FOR) {
+      node.addChild(ForStmt());
+    } else if (currentToken.tokenType() == WHILE) {
+      node.addChild(WhileStmt());
+    } else if (currentToken.tokenType() == RETURN) {
+      node.addChild(ReturnStmt());
+    } else if (currentToken.tokenType() == PRINT) {
+      node.addChild(PrintStmt());
+    } else if (currentToken.tokenType() == L_BRACE) {
       eat(L_BRACE);
-      StmtList();
+      node.addChild(StmtList());
       eat(R_BRACE);
     } else {
-      ExprStmt();
+      node.addChild(ExprStmt());
     }
+    return node;
   }
 
   // IfStmt -> if ( Expression ) Statement IfStmt'
-  private void IfStmt() {
+  private AstNode IfStmt() {
+    AstNode node = new AstNode("IfStmt");
     eat(IF);
     eat(L_PARENTHESIS);
-    Expression();
+    node.addChild(Expression());
     eat(R_PARENTHESIS);
-    Statement();
-    IfStmtP();
+    node.addChild(Statement());
+    node.addChild(IfStmtP());
+    return node;
   }
 
   // IfStmt' -> else Statement | epsilon
-  private void IfStmtP() {
+  private AstNode IfStmtP() {
+    AstNode node = new AstNode("IfStmt'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ELSE) {
       eat(ELSE);
-      Statement();
+      node.addChild(Statement());
     }
+    return node;
   }
 
   // ForStmt -> for ( ForInit Expression ; Expression ) Statement
-  private void ForStmt() {
+  private AstNode ForStmt() {
+    AstNode node = new AstNode("ForStmt");
     eat(FOR);
     eat(L_PARENTHESIS);
-    ForInit();
-    Expression();
+    node.addChild(ForInit());
+    node.addChild(Expression());
     eat(SEMICOLON);
-    Expression();
+    node.addChild(Expression());
     eat(R_PARENTHESIS);
-    Statement();
+    node.addChild(Statement());
+    return node;
   }
 
   // ForInit -> VarDecl | ExprStmt
-  private void ForInit() {
-    if (tokenReader.getCurrentToken().tokenType() == INT ||
-      tokenReader.getCurrentToken().tokenType() == BOOL ||
-      tokenReader.getCurrentToken().tokenType() == CHAR ||
-      tokenReader.getCurrentToken().tokenType() == STRING) {
-      VarDecl();
+  private AstNode ForInit() {
+    AstNode node = new AstNode("ForInit");
+    if (isTypeToken(tokenReader.getCurrentToken())) {
+      node.addChild(VarDecl());
     } else {
-      ExprStmt();
+      node.addChild(ExprStmt());
     }
+    return node;
   }
 
   // WhileStmt -> while ( Expression ) Statement
-  private void WhileStmt() {
+  private AstNode WhileStmt() {
+    AstNode node = new AstNode("WhileStmt");
     eat(WHILE);
     eat(L_PARENTHESIS);
-    Expression();
+    node.addChild(Expression());
     eat(R_PARENTHESIS);
-    Statement();
+    node.addChild(Statement());
+    return node;
   }
 
   // ReturnStmt -> return Expression ; | return ;
-  private void ReturnStmt() {
+  private AstNode ReturnStmt() {
+    AstNode node = new AstNode("ReturnStmt");
     eat(RETURN);
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != SEMICOLON) {
-      Expression();
+      node.addChild(Expression());
     }
     eat(SEMICOLON);
+    return node;
   }
 
   // PrintStmt -> print ( ExprList ) ;
-  private void PrintStmt() {
+  private AstNode PrintStmt() {
+    AstNode node = new AstNode("PrintStmt");
     eat(PRINT);
     eat(L_PARENTHESIS);
-    ExprList();
+    node.addChild(ExprList());
     eat(R_PARENTHESIS);
     eat(SEMICOLON);
+    return node;
   }
 
   // ExprStmt -> Identifier ++ ; | Identifier -- ; | Expression ; | ;
-  private void ExprStmt() {
+  private AstNode ExprStmt() {
+    AstNode node = new AstNode("ExprStmt");
     Token currentToken = tokenReader.getCurrentToken();
+
     if (currentToken != null && currentToken.tokenType() == IDENTIFIER) {
+      AstNode identifierNode = new AstNode(currentToken.tokenValue());
       eat(IDENTIFIER);
+      node.addChild(identifierNode);
       if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
-        FactorP();
+        node.addChild(FactorP());
         eat(SEMICOLON);
       } else if (tokenReader.getCurrentToken().tokenType() == INCREMENT) {
         eat(INCREMENT);
@@ -257,205 +306,245 @@ public class Parser {
         eat(SEMICOLON);
       }
     } else if (currentToken != null && currentToken.tokenType() != SEMICOLON) {
-      Expression();
+      node.addChild(Expression());
       eat(SEMICOLON);
     } else {
       eat(SEMICOLON);
     }
+    return node;
   }
 
   // ExprList -> Expression ExprList'
-  private void ExprList() {
-    Expression();
-    ExprListP();
+  private AstNode ExprList() {
+    AstNode node = new AstNode("ExprList");
+    node.addChild(Expression());
+    node.addChild(ExprListP());
+    return node;
   }
 
   // ExprList' -> , ExprList | epsilon
-  private void ExprListP() {
+  private AstNode ExprListP() {
+    AstNode node = new AstNode("ExprList'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == COMMA) {
       eat(COMMA);
-      ExprList();
+      node.addChild(ExprList());
     }
+    return node;
   }
 
   // Expression -> OrExpr Expression'
-  private void Expression() {
-    OrExpr();
-    ExpressionP();
+  private AstNode Expression() {
+    AstNode node = new AstNode("Expression");
+    node.addChild(OrExpr());
+    node.addChild(ExpressionP());
+    return node;
   }
 
   // Expression' -> = Expression | epsilon
-  private void ExpressionP() {
+  private AstNode ExpressionP() {
+    AstNode node = new AstNode("Expression'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
       eat(ASSIGNMENT);
-      Expression();
+      node.addChild(Expression());
     }
+    return node;
   }
 
   // OrExpr -> AndExpr OrExpr'
-  private void OrExpr() {
-    AndExpr();
-    OrExprP();
+  private AstNode OrExpr() {
+    AstNode node = new AstNode("OrExpr");
+    node.addChild(AndExpr());
+    node.addChild(OrExprP());
+    return node;
   }
 
   // OrExpr' -> || AndExpr OrExpr' | epsilon
-  private void OrExprP() {
+  private AstNode OrExprP() {
+    AstNode node = new AstNode("OrExpr'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == OR) {
       eat(OR);
-      AndExpr();
-      OrExprP();
+      node.addChild(AndExpr());
+      node.addChild(OrExprP());
     }
+    return node;
   }
 
   // AndExpr -> EqExpr AndExpr'
-  private void AndExpr() {
-    EqExpr();
-    AndExprP();
+  private AstNode AndExpr() {
+    AstNode node = new AstNode("AndExpr");
+    node.addChild(EqExpr());
+    node.addChild(AndExprP());
+    return node;
   }
 
   // AndExpr' -> && EqExpr AndExpr' | epsilon
-  private void AndExprP() {
+  private AstNode AndExprP() {
+    AstNode node = new AstNode("AndExpr'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == AND) {
       eat(AND);
-      EqExpr();
-      AndExprP();
+      node.addChild(EqExpr());
+      node.addChild(AndExprP());
     }
+    return node;
   }
 
   // EqExpr -> RelExpr EqExpr'
-  private void EqExpr() {
-    RelExpr();
-    EqExprP();
+  private AstNode EqExpr() {
+    AstNode node = new AstNode("EqExpr");
+    node.addChild(RelExpr());
+    node.addChild(EqExprP());
+    return node;
   }
 
   // EqExpr' -> == RelExpr EqExpr' | != RelExpr EqExpr' | epsilon
-  private void EqExprP() {
+  private AstNode EqExprP() {
+    AstNode node = new AstNode("EqExpr'");
     if (tokenReader.getCurrentToken() != null &&
-      (tokenReader.getCurrentToken().tokenType() == EQUAL || tokenReader.getCurrentToken().tokenType() == NOT_EQUAL)) {
+        (tokenReader.getCurrentToken().tokenType() == EQUAL || tokenReader.getCurrentToken().tokenType() == NOT_EQUAL)) {
       eat(tokenReader.getCurrentToken().tokenType());
-      RelExpr();
-      EqExprP();
+      node.addChild(RelExpr());
+      node.addChild(EqExprP());
     }
+    return node;
   }
 
   // RelExpr -> Expr RelExpr'
-  private void RelExpr() {
-    Expr();
-    RelExprP();
+  private AstNode RelExpr() {
+    AstNode node = new AstNode("RelExpr");
+    node.addChild(Expr());
+    node.addChild(RelExprP());
+    return node;
+
   }
 
   // RelExpr' -> < Expr RelExpr' | > Expr RelExpr' | <= Expr RelExpr' | >= Expr RelExpr' | epsilon
-  private void RelExprP() {
+  private AstNode RelExprP() {
+    AstNode node = new AstNode("RelExpr'");
     if (tokenReader.getCurrentToken() != null &&
-      (tokenReader.getCurrentToken().tokenType() == LESS_THAN ||
-        tokenReader.getCurrentToken().tokenType() == GREATER_THAN ||
-        tokenReader.getCurrentToken().tokenType() == LESS_THAN_OR_EQUAL ||
-        tokenReader.getCurrentToken().tokenType() == GREATER_THAN_OR_EQUAL)) {
+        (tokenReader.getCurrentToken().tokenType() == LESS_THAN ||
+            tokenReader.getCurrentToken().tokenType() == GREATER_THAN ||
+            tokenReader.getCurrentToken().tokenType() == LESS_THAN_OR_EQUAL ||
+            tokenReader.getCurrentToken().tokenType() == GREATER_THAN_OR_EQUAL)) {
       eat(tokenReader.getCurrentToken().tokenType());
-      Expr();
-      RelExprP();
+      node.addChild(Expr());
+      node.addChild(RelExprP());
     }
+    return node;
   }
 
   // Expr -> Term Expr'
-  private void Expr() {
-    Term();
-    ExprP();
+  private AstNode Expr() {
+    AstNode node = new AstNode("Expr");
+    node.addChild(Term());
+    node.addChild(ExprP());
+    return node;
   }
 
   // Expr' -> + Term Expr' | - Term Expr' | epsilon
-  private void ExprP() {
+  private AstNode ExprP() {
+    AstNode node = new AstNode("Expr'");
     if (tokenReader.getCurrentToken() != null &&
-      (tokenReader.getCurrentToken().tokenType() == ADDITION ||
-        tokenReader.getCurrentToken().tokenType() == SUBTRACTION)) {
+        (tokenReader.getCurrentToken().tokenType() == ADDITION ||
+            tokenReader.getCurrentToken().tokenType() == SUBTRACTION)) {
       eat(tokenReader.getCurrentToken().tokenType());
-      Term();
-      ExprP();
+      node.addChild(Term());
+      node.addChild(ExprP());
     }
+    return node;
   }
 
   // Term -> Unary Term'
-  private void Term() {
-    Unary();
-    TermP();
+  private AstNode Term() {
+    AstNode node = new AstNode("Term");
+    node.addChild(Unary());
+    node.addChild(TermP());
+    return node;
   }
 
   // Term' -> * Unary Term' | / Unary Term' | % Unary Term' | epsilon
-  private void TermP() {
+  private AstNode TermP() {
+    AstNode node = new AstNode("Term'");
     if (tokenReader.getCurrentToken() != null &&
-      (tokenReader.getCurrentToken().tokenType() == MULTIPLICATION ||
-        tokenReader.getCurrentToken().tokenType() == DIVISION ||
-        tokenReader.getCurrentToken().tokenType() == MODULUS)) {
+        (tokenReader.getCurrentToken().tokenType() == MULTIPLICATION ||
+            tokenReader.getCurrentToken().tokenType() == DIVISION ||
+            tokenReader.getCurrentToken().tokenType() == MODULUS)) {
       eat(tokenReader.getCurrentToken().tokenType());
-      Unary();
-      TermP();
+      node.addChild(Unary());
+      node.addChild(TermP());
     }
+    return node;
   }
 
   // Unary -> ! Unary | - Unary  | Factor
-  private void Unary() {
+  private AstNode Unary() {
+    AstNode node = new AstNode("Unary");
     Token currentToken = tokenReader.getCurrentToken();
-    if (currentToken.tokenType() == LOGICAL_NOT) {
-      eat(LOGICAL_NOT);
-      Unary();
-    } else if (currentToken.tokenType() == SUBTRACTION) {
-      eat(SUBTRACTION);
-      Unary();
+    if (currentToken.tokenType() == LOGICAL_NOT || currentToken.tokenType() == SUBTRACTION) {
+      eat(currentToken.tokenType());
+      node.addChild(Unary());
     } else {
-      Factor();
+      node.addChild(Factor());
     }
+    return node;
   }
 
   // Factor -> Identifier Factor' | IntLiteral | CharLiteral | StringLiteral | BoolLiteral | ( Expression )
-  private void Factor() {
-    if (tokenReader.getCurrentToken().tokenType().equals(IDENTIFIER)) {
+  private AstNode Factor() {
+    AstNode node = new AstNode("Factor");
+    Token currentToken = tokenReader.getCurrentToken();
+
+    if (currentToken.tokenType() == IDENTIFIER) {
+      AstNode identifierNode = new AstNode(currentToken.tokenValue());
       eat(IDENTIFIER);
-      FactorP();
-    } else if (tokenReader.getCurrentToken().tokenType().equals(INT_LITERAL)) {
-      eat(INT_LITERAL);
-    } else if (tokenReader.getCurrentToken().tokenType().equals(CHAR_LITERAL)) {
-      eat(CHAR_LITERAL);
-    } else if (tokenReader.getCurrentToken().tokenType().equals(STRING_LITERAL)) {
-      eat(STRING_LITERAL);
-    } else if (tokenReader.getCurrentToken().tokenType().equals(BOOL_LITERAL)) {
-      eat(BOOL_LITERAL);
-    } else if (tokenReader.getCurrentToken().tokenType().equals(L_PARENTHESIS)) {
+      node.addChild(identifierNode);
+      node.addChild(FactorP());
+    } else if (currentToken.tokenType() == INT_LITERAL ||
+        currentToken.tokenType() == CHAR_LITERAL ||
+        currentToken.tokenType() == STRING_LITERAL ||
+        currentToken.tokenType() == BOOL_LITERAL) {
+      AstNode literalNode = new AstNode(currentToken.tokenValue());
+      eat(currentToken.tokenType());
+      node.addChild(literalNode);
+    } else if (currentToken.tokenType() == L_PARENTHESIS) {
       eat(L_PARENTHESIS);
-      Expression();
+      node.addChild(Expression());
       eat(R_PARENTHESIS);
     } else {
-      Logger.parserError("Syntax error: expected a factor but got " + tokenReader.getCurrentToken());
-      throw new RuntimeException("Syntax error: expected a factor but got " + tokenReader.getCurrentToken());
+      AppLogger.parserError("Syntax error: expected a factor but got " + currentToken);
+      throw new RuntimeException("Syntax error: expected a factor but got " + currentToken);
     }
+    return node;
   }
 
   // Factor' -> ( ExprList ) | epsilon
-  private void FactorP() {
+  private AstNode FactorP() {
+    AstNode node = new AstNode("Factor'");
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
       eat(L_PARENTHESIS);
       if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != R_PARENTHESIS) {
-        ExprList();
+        node.addChild(ExprList());
       }
       eat(R_PARENTHESIS);
     }
+    return node;
   }
 
   private boolean isTypeToken(Token token) {
     return token.tokenType() == INT ||
-      token.tokenType() == BOOL ||
-      token.tokenType() == CHAR ||
-      token.tokenType() == STRING ||
-      token.tokenType() == VOID;
+        token.tokenType() == BOOL ||
+        token.tokenType() == CHAR ||
+        token.tokenType() == STRING ||
+        token.tokenType() == VOID;
   }
 
   private boolean isStatementToken(Token token) {
     return isTypeToken(token) ||
-      token.tokenType() == IF ||
-      token.tokenType() == FOR ||
-      token.tokenType() == RETURN ||
-      token.tokenType() == PRINT ||
-      token.tokenType() == WHILE ||
-      token.tokenType() == IDENTIFIER ||
-      token.tokenType() == L_BRACE;
+        token.tokenType() == IF ||
+        token.tokenType() == FOR ||
+        token.tokenType() == RETURN ||
+        token.tokenType() == PRINT ||
+        token.tokenType() == WHILE ||
+        token.tokenType() == IDENTIFIER ||
+        token.tokenType() == L_BRACE;
   }
 }

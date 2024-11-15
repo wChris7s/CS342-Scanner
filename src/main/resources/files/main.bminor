@@ -1,44 +1,4 @@
-int a = 3;
-int b = 5;
-
-void foo(){
-    int e = 1 * 2;
-    int ee = 2 * 1;
-    while(e <= 10){
-        print("Hello World!");
-        for( int q = 0; q < 10; q = q + 1){
-            print(q);
-            while(q == 2) {
-                print("Q is two :)");
-            }
-        }
-        string message = "hey!";
-        string message1 = "hey!!";
-        string message2 = "hey!!!";
-        if (message == "hey!") {
-            print(":)");
-            if ((message == message1) && (message1 == message2)) {
-                print(":-)");
-                print(":-(");
-            }
-            if ((message == message1) || (message1 == message2)) {
-                print(":-)");
-            }
-        } else {
-            print(":(");
-        }
-    }
-    int a = 2;
-    a--;
-    a++;
-    a**;    // Square of a number.
-    int u = !abc;
-    return;
-}
-
-int main(int t){
-    print("hola", a, b, c, 123, a && b);
-    int x = foo(a);
-    int x = foo(a, b, c, foo(d));
-    return t;
+int main(){
+    int a = 1;
+    return a;
 }

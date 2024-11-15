@@ -128,7 +128,7 @@ public class Parser {
       tokenReader.advanceToken();
     }
 
-    // Si se alcanza el final de los tokens sin encontrar un punto y coma
+
     Logger.parserError("Reached end of input while in panic mode. Parsing terminated.");
   }
 

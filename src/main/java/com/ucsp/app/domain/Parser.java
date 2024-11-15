@@ -111,7 +111,9 @@ public class Parser {
 
   private void enterPanicMode() {
     isInPanicMode = true;
-    Logger.parserError("Entering panic mode. Attempting to recover by skipping tokens until a synchronization point is found.");
+    Logger.parserError("Entering panic mode. Skipping tokens until a semicolon (;) is found.");
+
+    // Avanzar tokens hasta encontrar un punto y coma
     while (tokenReader.getCurrentToken() != null) {
       Token currentToken = tokenReader.getCurrentToken();
       if (currentToken.tokenType() == L_BRACE ||
@@ -119,14 +121,17 @@ public class Parser {
               currentToken.tokenType() == R_BRACE ||
               currentToken.tokenType() == EOF) {
         Logger.panicModeExit(currentToken);
-        tokenReader.advanceToken();
-        isInPanicMode = false;
+        // Avanza el token después del punto y coma
+        isInPanicMode = false; // Sale del modo pánico
         return;
       }
       tokenReader.advanceToken();
     }
+
+    // Si se alcanza el final de los tokens sin encontrar un punto y coma
     Logger.parserError("Reached end of input while in panic mode. Parsing terminated.");
   }
+
 
 
 

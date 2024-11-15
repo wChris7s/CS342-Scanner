@@ -2,5 +2,12 @@ int main (int t){
     int y = 10;
     int x = 11;
     int q=10;
-    int p=12+;
+    int u=1;
+    int p=12;
+    for (int i = 0; i <3; i = i + 1){
+        x = x + 1;
+        y = y + 1;
+
+    }
+
 }

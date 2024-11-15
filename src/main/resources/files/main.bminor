@@ -1,5 +1,6 @@
-void main(){
-    int a = 5;
-    bool b = 1;
-    return a;
+int main (int t){
+    int y = 10;
+    int x = 11;
+    int q=10;
+    int p=12+;
 }

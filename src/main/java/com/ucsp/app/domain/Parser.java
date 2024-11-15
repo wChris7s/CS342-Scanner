@@ -4,6 +4,12 @@ import com.ucsp.app.domain.logger.Logger;
 import com.ucsp.app.domain.token.Token;
 import com.ucsp.app.domain.token.reader.TokenReader;
 import com.ucsp.app.domain.token.types.TokenType;
+import org.graphstream.graph.Graph;
+import org.graphstream.graph.Node;
+import org.graphstream.graph.implementations.SingleGraph;
+import org.graphstream.ui.layout.HierarchicalLayout;
+import org.graphstream.ui.layout.springbox.implementations.SpringBox;
+import org.graphstream.ui.view.Viewer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +23,7 @@ import static com.ucsp.app.domain.token.types.impl.Operator.*;
 public class Parser {
 
   private final TokenReader tokenReader;
+  private boolean isInPanicMode = false; // Variable para rastrear el modo pánico
   private final Set<TokenType> syncTokens = Set.of(SEMICOLON, R_BRACE, L_BRACE, EOF);
 
   public Parser(TokenReader tokenReader) {
@@ -45,13 +52,46 @@ public class Parser {
     }
   }
 
+  // Método para generar la gráfica y mostrar el AST
+  public void displayGraph(ASTNode root) {
+    Graph graph = new SingleGraph("AST");
+    graph.setStrict(false);
+    graph.setAutoCreate(true);
+
+    // Crear los nodos de la gráfica a partir del AST
+    createGraphNodes(graph, root, null);
+
+    // Configurar y mostrar la gráfica
+    graph.display();
+  }
+
+  // Función recursiva para crear nodos en el grafo desde el AST
+  private void createGraphNodes(Graph graph, ASTNode node, String parentId) {
+    String nodeId = Integer.toHexString(System.identityHashCode(node)); // Identificador único para el nodo
+    Node graphNode = graph.addNode(nodeId);
+    graphNode.setAttribute("ui.label", node.getType()); // Etiqueta del nodo
+
+    if (parentId != null) {
+      graph.addEdge(parentId + "-" + nodeId, parentId, nodeId); // Conectar con el nodo padre
+    }
+
+    // Llamada recursiva para los hijos del nodo
+    for (ASTNode child : node.getChildren()) {
+      createGraphNodes(graph, child, nodeId);
+    }
+  }
+
+
+
   private void eat(TokenType tokenType) {
     Token currentToken = tokenReader.getCurrentToken();
     if (currentToken != null && currentToken.tokenType() == tokenType) {
       Logger.parserDebug(currentToken, tokenType);
       tokenReader.advanceToken();
+      isInPanicMode = false; // Salir del modo pánico si se encuentra el token esperado
     } else {
       Logger.parserError("Syntax error: expected " + tokenType + " but got " + currentToken);
+      enterPanicMode(); // Entrar en modo pánico en caso de error
       synchronize();
     }
   }
@@ -69,6 +109,27 @@ public class Parser {
     printASTRecursive(node, "", true);
   }
 
+  private void enterPanicMode() {
+    isInPanicMode = true;
+    Logger.parserError("Entering panic mode. Attempting to recover by skipping tokens until a synchronization point is found.");
+    while (tokenReader.getCurrentToken() != null) {
+      Token currentToken = tokenReader.getCurrentToken();
+      if (currentToken.tokenType() == L_BRACE ||
+              currentToken.tokenType() == SEMICOLON ||
+              currentToken.tokenType() == R_BRACE ||
+              currentToken.tokenType() == EOF) {
+        Logger.panicModeExit(currentToken);
+        tokenReader.advanceToken();
+        isInPanicMode = false;
+        return;
+      }
+      tokenReader.advanceToken();
+    }
+    Logger.parserError("Reached end of input while in panic mode. Parsing terminated.");
+  }
+
+
+
   private void printASTRecursive(ASTNode node, String prefix, boolean isLast) {
     System.out.println(prefix + (isLast ? "+-- " : "+-- ") + node.getType());
     for (int i = 0; i < node.getChildren().size(); i++) {
@@ -82,8 +143,42 @@ public class Parser {
     ASTNode root = Program();
     if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() != EOF) {
       Logger.parserError("Syntax error: expected EOF but found extra tokens");
+      enterPanicMode();
     } else {
       printAST(root);
+      displayASTGraph(root);
+    }
+  }
+
+  private void displayASTGraph(ASTNode root) {
+    Graph graph = new SingleGraph("AST");
+    graph.setStrict(false);
+    graph.setAutoCreate(true);
+
+    addNodeToGraph(graph, root, null);
+
+    graph.addAttribute("ui.stylesheet", "node { fill-color: black; text-color: red; text-size: 14; size: 60px, 40px; }");
+    graph.addAttribute("ui.quality");
+    graph.addAttribute("ui.antialias");
+
+    Viewer viewer = graph.display();
+    SpringBox layout = new SpringBox();
+    viewer.enableAutoLayout(layout);
+  }
+
+
+  // Método auxiliar para agregar nodos y aristas al gráfico
+  private void addNodeToGraph(Graph graph, ASTNode node, String parentId) {
+    String nodeId = Integer.toHexString(System.identityHashCode(node)); // Generar un ID único
+    Node graphNode = graph.addNode(nodeId);
+    graphNode.setAttribute("ui.label", node.getType());
+
+    if (parentId != null) {
+      graph.addEdge(parentId + "-" + nodeId, parentId, nodeId, true);
+    }
+
+    for (ASTNode child : node.getChildren()) {
+      addNodeToGraph(graph, child, nodeId);
     }
   }
 
@@ -101,6 +196,11 @@ public class Parser {
     if (tokenReader.getCurrentToken() != null && isTypeToken(tokenReader.getCurrentToken())) {
       node.addChild(Declaration());
       node.addChild(ProgramP());
+    } else if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == EOF) {
+        Logger.parserDebug(tokenReader.getCurrentToken(), EOF);
+    } else if (!isInPanicMode) { // Solo entrar en modo pánico si no estamos en él ya
+        Logger.parserError("Syntax error: expected EOF but got " + tokenReader.getCurrentToken());
+        enterPanicMode();
     }
     return node;
   }
@@ -138,6 +238,9 @@ public class Parser {
     if (isTypeToken(tokenReader.getCurrentToken())) {
       node.addChild(new ASTNode(tokenReader.getCurrentToken().tokenValue()));
       eat(tokenReader.getCurrentToken().tokenType());
+    } else {
+      Logger.parserError("Syntax error: expected a type but got " + tokenReader.getCurrentToken());
+      enterPanicMode();
     }
     return node;
   }
@@ -362,16 +465,16 @@ public class Parser {
     return node;
   }
 
-  // OrExpr' → || AndExpr OrExpr' | epsilon
-  private ASTNode OrExprP() {
-    ASTNode node = new ASTNode("OrExprP");
-    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == OR) {
-      eat(OR);
-      node.addChild(AndExpr());
-      node.addChild(OrExprP());
+    // OrExpr' → || AndExpr OrExpr' | epsilon
+    private ASTNode OrExprP() {
+        ASTNode node = new ASTNode("OrExprP");
+        if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == OR) {
+            eat(OR);
+            node.addChild(AndExpr());
+            node.addChild(OrExprP());
+        }
+        return node;
     }
-    return node;
-  }
 
   // AndExpr → EqExpr AndExpr'
   private ASTNode AndExpr() {
@@ -512,6 +615,9 @@ public class Parser {
       eat(L_PARENTHESIS);
       node.addChild(Expression());
       eat(R_PARENTHESIS);
+    } else {
+      Logger.parserError("Syntax error: expected a factor but got " + tokenReader.getCurrentToken());
+      enterPanicMode();
     }
     return node;
   }
@@ -530,14 +636,21 @@ public class Parser {
   }
 
   private boolean isTypeToken(Token token) {
-    return token.tokenType() == INT || token.tokenType() == BOOL || token.tokenType() == CHAR ||
-        token.tokenType() == STRING || token.tokenType() == VOID;
+    return token.tokenType() == INT ||
+      token.tokenType() == BOOL ||
+      token.tokenType() == CHAR ||
+      token.tokenType() == STRING ||
+      token.tokenType() == VOID;
   }
 
   private boolean isStatementToken(Token token) {
-    return isTypeToken(token) || token.tokenType() == IF || token.tokenType() == FOR ||
-        token.tokenType() == RETURN || token.tokenType() == PRINT ||
-        token.tokenType() == WHILE || token.tokenType() == IDENTIFIER ||
-        token.tokenType() == L_BRACE;
+    return isTypeToken(token) ||
+      token.tokenType() == IF ||
+      token.tokenType() == FOR ||
+      token.tokenType() == RETURN ||
+      token.tokenType() == PRINT ||
+      token.tokenType() == WHILE ||
+      token.tokenType() == IDENTIFIER ||
+      token.tokenType() == L_BRACE;
   }
 }

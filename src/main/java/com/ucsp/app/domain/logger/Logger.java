@@ -17,6 +17,9 @@ public class Logger {
 
   private static final String PARSER_ERROR_MESSAGE = "ERROR PARSER - %s";
 
+  private static final String PANIC_MODE_EXIT_MESSAGE = "DEBUG PARSER - Panic mode exited. Resuming parsing at token: [ '%s' ] with value [ '%s' ]";
+
+
   public static void updatePosition(char c) {
     if (c == '\n') {
       line++;
@@ -52,4 +55,12 @@ public class Logger {
     String formattedMessage = String.format(PARSER_ERROR_MESSAGE, message);
     System.out.println(formattedMessage);
   }
+
+
+public static void panicModeExit(Token token) {
+  String formattedMessage = String.format(PANIC_MODE_EXIT_MESSAGE,
+          token.tokenType().name(),
+          token.tokenValue());
+  System.out.println(formattedMessage);
+}
 }

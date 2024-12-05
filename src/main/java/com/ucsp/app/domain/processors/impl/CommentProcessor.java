@@ -1,51 +1,67 @@
 package com.ucsp.app.domain.processors.impl;
 
-import com.ucsp.app.domain.logger.AppLogger;
-import com.ucsp.app.domain.reader.Reader;
+import com.ucsp.app.domain.logger.ScannerPositionManager;
+import com.ucsp.app.domain.logger.utils.LoggerMessage;
 import com.ucsp.app.domain.processors.TokenProcessor;
+import com.ucsp.app.domain.reader.Reader;
 import com.ucsp.app.domain.token.Token;
 import com.ucsp.app.domain.token.types.impl.Operator;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
+@Slf4j
 public class CommentProcessor implements TokenProcessor {
 
   private final Reader reader;
 
+  private final ScannerPositionManager positionManager;
+
   public CommentProcessor(Reader reader) {
     this.reader = reader;
+    this.positionManager = ScannerPositionManager.getInstance();
   }
 
   private void processInlineComment() throws IOException {
     while (reader.hasNext() && reader.peekChar() != '\n')
-      AppLogger.updatePosition(reader.getChar());
+      positionManager.updatePosition(reader.getChar());
   }
 
   private void processBlockComment() throws IOException {
     boolean isClosed = false;
-    AppLogger.updatePosition(reader.getChar());
+    positionManager.updatePosition(reader.getChar());
     while (reader.hasNext()) {
       char currentChar = reader.getChar(); // get '*' and move next '/'
-      AppLogger.updatePosition(currentChar);
+      positionManager.updatePosition(currentChar);
       if (currentChar == '*' && reader.hasNext() && reader.peekChar() == '/') {
         isClosed = true;
-        AppLogger.updatePosition(reader.getChar());
+        positionManager.updatePosition(reader.getChar());
         break;
       }
     }
-    if (!isClosed) throw new RuntimeException();
+    if (!isClosed) {
+      throw new RuntimeException();
+    }
   }
 
   @Override
   public Token process() throws IOException {
     if (reader.hasNext()) {
       char currentChar = reader.getChar();  // process the first '/'
-      int currentColumn = AppLogger.getColumn();
-      AppLogger.updatePosition(currentChar);
-      if (reader.peekChar() == '/') processInlineComment();
-      else if (reader.peekChar() == '*') processBlockComment();
-      else {  // stop processing the comment to process the division operator
-        AppLogger.debug(Operator.DIVISION, Operator.DIVISION.value(), currentColumn);
+      int currentColumn = positionManager.getColumn();
+      positionManager.updatePosition(currentChar);
+      if (reader.peekChar() == '/') {
+        processInlineComment();
+      } else if (reader.peekChar() == '*') {
+        processBlockComment();
+      } else {
+        // Stop processing the comment to process the division operator.
+        log.debug(LoggerMessage.SCANNER_DEBUG,
+            Operator.DIVISION.name(),
+            Operator.DIVISION.value(),
+            positionManager.getLine(),
+            currentColumn);
+
         return new Token(Operator.DIVISION, Operator.DIVISION.value());
       }
     }

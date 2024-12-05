@@ -1,16 +1,14 @@
 package com.ucsp.app.domain.logger.utils;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class LoggerMessage {
-  public static final String SCANNER_INFO = "DEBUG SCAN - %s [ '%s' ] found at (%d:%d)";
+  public static final String SCANNER_DEBUG = "DEBUG SCAN - {} [ '{}' ] found at ({}:{})";
 
-  public static final String SCANNER_ERROR = "ERROR SCAN - UNRECOGNIZED CHARACTER [ '%s' ] found at (%d:%d)";
+  public static final String SCANNER_ERROR = "ERROR SCAN - UNRECOGNIZED CHARACTER [ '{}' ] found at ({}:{})";
 
-  public static final String PARSER_INFO = "DEBUG PARSER - Current token [ '%s'] with value [ '%s' ], expected [ '%s' ]";
+  public static final String PARSER_DEBUG = "DEBUG PARSER - Current token [ '{}'] with value [ '{}' ] - expected [ '{}' ]";
 
-  public static final String PARSER_ERROR = "ERROR PARSER - %s";
-
-
-  private LoggerMessage() {
-    throw new IllegalStateException("Utility class");
-  }
+  public static final String PARSER_ERROR = "ERROR PARSER - {}";
 }

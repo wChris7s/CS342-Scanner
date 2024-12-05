@@ -1,4 +1,4 @@
-package com.ucsp.app.domain;
+package com.ucsp.app.domain.scanner;
 
 import com.ucsp.app.domain.logger.AppLogger;
 import com.ucsp.app.domain.processors.TokenProcessor;

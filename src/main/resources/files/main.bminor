@@ -1,13 +1,26 @@
-int main (int t){
-    int y = 10;
-    int x = 11;
-    int q=10;
-    int u=1;
-    int p=12;
-    for (int i = 0; i <3; i = i + 1){
-        x = x + 1;
-        y = y + 1;
 
+int k = 20;
+int w = 10;
+
+int foo(int x, int y) {
+    if (x > 10 && y == 10) {
+        int a = x + y;
+        for (int i = 0; i < 5; i = i + 1) {
+            a = a + i;
+        }
+        return a
+    } else {
+        if (x > y) {
+            return x * y;
+        }
+        return 1;
     }
+}
 
+int main(){
+    int a = foo (2, 3);
+    while (a < 100) {
+        a = a / (1 + 2) ;
+    }
+    return a;
 }

@@ -150,8 +150,8 @@ public class Parser {
       Logger.parserError("Syntax error: expected EOF but found extra tokens");
       enterPanicMode();
     } else {
-      printAST(root);
-      displayASTGraph(root);
+      //printAST(root);
+      //displayASTGraph(root);
     }
   }
 

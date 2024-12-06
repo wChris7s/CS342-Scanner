@@ -1,12 +1,12 @@
 package com.ucsp.app;
 
-import com.ucsp.app.domain.scanner.Scanner;
 import com.ucsp.app.domain.parser.Parser;
 import com.ucsp.app.domain.parser.ast.node.impl.ProgramNode;
 import com.ucsp.app.domain.parser.ast.printer.ASTPrinterGraphviz;
 import com.ucsp.app.domain.processors.TokenProcessor;
 import com.ucsp.app.domain.processors.impl.*;
 import com.ucsp.app.domain.reader.Reader;
+import com.ucsp.app.domain.scanner.Scanner;
 import com.ucsp.app.domain.token.reader.TokenReader;
 import com.ucsp.app.domain.token.reader.impl.TokenReaderImpl;
 
@@ -37,8 +37,10 @@ public class MainApplication {
     // ASTPrinterCommandLine printer = new ASTPrinterCommandLine()
     // programNode.accept(printer)
 
-    ASTPrinterGraphviz printer = new ASTPrinterGraphviz();
-    programNode.accept(printer);
-    printer.printToFile("src/main/resources/output/ast.png");
+      System.out.println("////");
+      ASTPrinterGraphviz printer = new ASTPrinterGraphviz();
+      programNode.accept(printer);
+      printer.printToFile("src/main/resources/output/ast.png");
+
   }
 }

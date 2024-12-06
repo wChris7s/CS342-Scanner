@@ -1,14 +1,14 @@
 package com.ucsp.app;
 
-import com.ucsp.app.domain.scanner.Scanner;
-import com.ucsp.app.domain.parser.Parser;
-import com.ucsp.app.domain.parser.ast.node.impl.ProgramNode;
-import com.ucsp.app.domain.parser.ast.printer.ASTPrinterGraphviz;
-import com.ucsp.app.domain.processors.TokenProcessor;
-import com.ucsp.app.domain.processors.impl.*;
-import com.ucsp.app.domain.reader.Reader;
-import com.ucsp.app.domain.token.reader.TokenReader;
-import com.ucsp.app.domain.token.reader.impl.TokenReaderImpl;
+import com.ucsp.app.processors.impl.*;
+import com.ucsp.app.scanner.Scanner;
+import com.ucsp.app.parser.Parser;
+import com.ucsp.app.parser.ast.node.impl.ProgramNode;
+import com.ucsp.app.parser.ast.printer.ASTPrinterGraphviz;
+import com.ucsp.app.processors.TokenProcessor;
+import com.ucsp.app.reader.Reader;
+import com.ucsp.app.token.reader.TokenReader;
+import com.ucsp.app.token.reader.impl.TokenReaderImpl;
 
 import java.io.IOException;
 import java.util.List;

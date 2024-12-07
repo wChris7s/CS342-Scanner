@@ -1,22 +1,36 @@
 package com.ucsp.app.logger.utils;
 
 import lombok.experimental.UtilityClass;
+import org.fusesource.jansi.Ansi;
 
 @UtilityClass
 public class LoggerMessage {
-  public static final String SCANNER_DEBUG = "SCANNER - {} [ '{}' ] found at ({}:{})";
 
-  public static final String SCANNER_ERROR = "SCANNER - UNRECOGNIZED CHARACTER [ '{}' ] found at ({}:{})";
+  private static final String SCANNER_COLOR = Ansi.ansi()
+      .fgBlue()
+      .a("SCANNER")
+      .reset()
+      .toString();
 
-  public static final String PARSER_DEBUG = "PARSER - Current token [ '{}'] with value [ '{}' ] - expected [ '{}' ]";
+  private static final String PARSER_COLOR = Ansi.ansi()
+      .fgRgb(255, 210, 154) // orange
+      .a("PARSER")
+      .reset()
+      .toString();
 
-  public static final String PARSER_ERROR = "PARSER - {}";
+  public static final String SCANNER_DEBUG = SCANNER_COLOR + " - {} [ '{}' ] found at ({}:{})";
 
-  public static final String PARSER_PANIC_MODE = "PARSER - Resuming parsing at token: [ '{}' ] with value [ '{}' ]";
+  public static final String SCANNER_ERROR = SCANNER_COLOR + " - UNRECOGNIZED CHARACTER [ '{}' ] found at ({}:{})";
 
-  public static final String PARSER_PANIC_MODE_EAT = "PARSER - Eating token: [ '{}' ] with value [ '{}' ]";
+  public static final String PARSER_DEBUG = PARSER_COLOR + " - Current token [ '{}'] with value [ '{}' ] - expected [ '{}' ]";
 
-  public static final String PARSER_SYNC_INIT = "PARSER - Synchronizing parser";
+  public static final String PARSER_ERROR = PARSER_COLOR + " - {}";
 
-  public static final String PARSER_SYNC_END = "PARSER - Parser synchronized";
+  public static final String PARSER_PANIC_MODE = PARSER_COLOR + " - Resuming parsing at token: [ '{}' ] with value [ '{}' ]";
+
+  public static final String PARSER_PANIC_MODE_EAT = PARSER_COLOR + " - Eating token: [ '{}' ] with value [ '{}' ]";
+
+  public static final String PARSER_SYNC_INIT = PARSER_COLOR + " - Synchronizing parser";
+
+  public static final String PARSER_SYNC_END = PARSER_COLOR + " - Parser synchronized";
 }

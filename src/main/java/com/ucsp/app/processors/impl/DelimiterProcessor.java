@@ -29,7 +29,7 @@ public class DelimiterProcessor implements TokenProcessor {
     positionManager.updatePosition(processedToken);
     Delimiter delimiter = Delimiter.fromString(String.valueOf(processedToken));
 
-    log.debug(LoggerMessage.SCANNER_DEBUG,
+    log.info(LoggerMessage.SCANNER_DEBUG,
         delimiter.name(),
         delimiter.value(),
         positionManager.getLine(),

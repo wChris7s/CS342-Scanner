@@ -1,17 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE configuration>
-
-<configuration>
-    <import class="ch.qos.logback.classic.encoder.PatternLayoutEncoder"/>
-    <import class="ch.qos.logback.core.ConsoleAppender"/>
-
-    <appender name="STDOUT" class="ConsoleAppender">
-        <encoder class="PatternLayoutEncoder">
-            <pattern>%d{HH:mm:ss.SSS} %logger{36} -%kvp- %msg%n</pattern>
+<configuration debug="true">
+    <conversionRule conversionWord="customHighlight" converterClass="com.ucsp.app.config.HighlightConfiguration" />
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- <withJansi>true</withJansi> -->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%magenta([%thread]) %customHighlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
         </encoder>
     </appender>
-
-    <root level="debug">
+    <root level="TRACE">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

@@ -16,6 +16,18 @@ import java.util.List;
 public class MainApplication {
   public static void main(String[] args) throws IOException {
     String path = "src/main/resources/files/main.bminor";
+    TokenReader tokenReader = getTokenReader(path);
+    Parser parser = new Parser(tokenReader);
+    ProgramNode programNode = parser.parse();
+
+    if (!parser.isHasErrors()) {
+      ASTPrinterGraphviz printer = new ASTPrinterGraphviz();
+      programNode.accept(printer);
+      printer.printToFile("src/main/resources/output/ast.png");
+    }
+  }
+
+  private static TokenReader getTokenReader(String path) throws IOException {
     Reader reader = new Reader(path);
     List<TokenProcessor> processors = List.of(
         new IdentifierProcessor(reader),
@@ -28,12 +40,6 @@ public class MainApplication {
     Scanner scanner = new Scanner(processors, reader);
     scanner.tokenize();
 
-    TokenReader tokenReader = new TokenReaderImpl(scanner.getTokens());
-    Parser parser = new Parser(tokenReader);
-    ProgramNode programNode = parser.parse();
-
-    ASTPrinterGraphviz printer = new ASTPrinterGraphviz();
-    programNode.accept(printer);
-    printer.printToFile("src/main/resources/output/ast.png");
+    return new TokenReaderImpl(scanner.getTokens());
   }
 }

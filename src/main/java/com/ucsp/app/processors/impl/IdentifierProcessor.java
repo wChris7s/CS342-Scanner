@@ -41,7 +41,7 @@ public class IdentifierProcessor implements TokenProcessor {
       String processedToken = tokenBuilder.toString();
       Keyword keyword = Keyword.fromString(processedToken);
 
-      log.debug(LoggerMessage.SCANNER_DEBUG,
+      log.info(LoggerMessage.SCANNER_DEBUG,
           keyword.name(),
           keyword.value(),
           positionManager.getLine(),
@@ -51,7 +51,7 @@ public class IdentifierProcessor implements TokenProcessor {
     } catch (IllegalArgumentException exception) {
       String processedToken = tokenBuilder.toString();
 
-      log.debug(LoggerMessage.SCANNER_DEBUG,
+      log.info(LoggerMessage.SCANNER_DEBUG,
           Category.IDENTIFIER.name(),
           processedToken,
           positionManager.getLine(),

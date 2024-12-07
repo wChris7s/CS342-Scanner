@@ -36,7 +36,7 @@ public class OperatorProcessor implements TokenProcessor {
     String processedToken = tokenBuilder.toString();
     Operator operator = Operator.fromString(processedToken);
 
-    log.debug(LoggerMessage.SCANNER_DEBUG,
+    log.info(LoggerMessage.SCANNER_DEBUG,
         operator.name(),
         processedToken,
         positionManager.getLine(),

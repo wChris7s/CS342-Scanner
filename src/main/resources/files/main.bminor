@@ -1,5 +1,5 @@
 int k = 20;
-int w = 10;
+int w 10;
 
 int foo(int x, int y) {
     if (x > 10 && y == 10) {
@@ -9,7 +9,7 @@ int foo(int x, int y) {
         }
         return a;
     } else {
-        if (x > y) {
+        if (x y) {
             return x * y;
         }
         return 1;

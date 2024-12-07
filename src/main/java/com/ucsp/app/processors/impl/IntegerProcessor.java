@@ -34,7 +34,7 @@ public class IntegerProcessor implements TokenProcessor {
 
     String literalValue = tokenBuilder.toString();
 
-    log.debug(LoggerMessage.SCANNER_DEBUG,
+    log.info(LoggerMessage.SCANNER_DEBUG,
         Category.INT_LITERAL.name(),
         literalValue,
         positionManager.getLine(),

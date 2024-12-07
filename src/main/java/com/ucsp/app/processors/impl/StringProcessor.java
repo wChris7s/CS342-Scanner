@@ -36,7 +36,7 @@ public class StringProcessor implements TokenProcessor {
     }
     String literalValue = tokenBuilder.toString();
 
-    log.debug(LoggerMessage.SCANNER_DEBUG,
+    log.info(LoggerMessage.SCANNER_DEBUG,
         Category.STRING_LITERAL.name(),
         literalValue,
         positionManager.getLine(),

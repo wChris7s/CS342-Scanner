@@ -30,7 +30,7 @@ public class CharacterProcessor implements TokenProcessor {
     positionManager.updatePosition(character);
     positionManager.updatePosition(reader.getChar());
 
-    log.debug(LoggerMessage.SCANNER_DEBUG,
+    log.info(LoggerMessage.SCANNER_DEBUG,
         Category.CHAR_LITERAL.name(),
         character,
         positionManager.getLine(),

@@ -56,7 +56,7 @@ public class CommentProcessor implements TokenProcessor {
         processBlockComment();
       } else {
         // Stop processing the comment to process the division operator.
-        log.debug(LoggerMessage.SCANNER_DEBUG,
+        log.info(LoggerMessage.SCANNER_DEBUG,
             Operator.DIVISION.name(),
             Operator.DIVISION.value(),
             positionManager.getLine(),

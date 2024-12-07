@@ -8,7 +8,8 @@ import com.ucsp.app.parser.utilties.TokenUtility;
 import com.ucsp.app.token.Token;
 import com.ucsp.app.token.reader.TokenReader;
 import com.ucsp.app.token.types.TokenType;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,18 +19,43 @@ import static com.ucsp.app.token.types.impl.Delimiter.*;
 import static com.ucsp.app.token.types.impl.Keyword.*;
 import static com.ucsp.app.token.types.impl.Operator.*;
 
-@Slf4j
 public class Parser {
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(Parser.class);
   private final TokenReader tokenReader;
+
+  @Getter
+  private boolean hasErrors;
 
   public Parser(TokenReader tokenReader) {
     this.tokenReader = tokenReader;
+    this.hasErrors = false;
+  }
+
+  private void panicMode() {
+    log.warn(LoggerMessage.PARSER_SYNC_INIT);
+    hasErrors = true;
+    Token currentToken = tokenReader.getCurrentToken();
+    List<TokenType> syncTokens = List.of(SEMICOLON, L_BRACE, R_BRACE, EOF);
+    while (currentToken != null && !syncTokens.contains(currentToken.tokenType())) {
+      log.warn(LoggerMessage.PARSER_PANIC_MODE_EAT,
+          currentToken.tokenType().name(),
+          currentToken.tokenValue());
+      tokenReader.advanceToken();
+      currentToken = tokenReader.getCurrentToken();
+    }
+    if (currentToken != null && currentToken.tokenType() == SEMICOLON) {
+      log.warn(LoggerMessage.PARSER_PANIC_MODE,
+          currentToken.tokenType().name(),
+          currentToken.tokenValue());
+      tokenReader.advanceToken();
+    }
+    log.warn(LoggerMessage.PARSER_SYNC_END);
   }
 
   private Token eat(TokenType tokenType) {
     Token currentToken = tokenReader.getCurrentToken();
     if (currentToken != null && currentToken.tokenType() == tokenType) {
-      log.debug(LoggerMessage.PARSER_DEBUG,
+      log.info(LoggerMessage.PARSER_DEBUG,
           currentToken.tokenType().name(),
           currentToken.tokenValue(),
           tokenType.name());  // expected
@@ -39,8 +65,8 @@ public class Parser {
     } else {
       String errMessage = "Syntax error: expected " + tokenType + " but got " + currentToken;
       log.error(LoggerMessage.PARSER_ERROR, errMessage);
-
-      throw new ParseException(errMessage);
+      panicMode();
+      return tokenReader.getCurrentToken();
     }
   }
 
@@ -58,129 +84,194 @@ public class Parser {
   // Program → Declaration Program'
   private ProgramNode program() {
     ProgramNode programNode = new ProgramNode();
-    programNode.addDeclaration(declaration());
-    programP(programNode);
+    try {
+      programNode.addDeclaration(declaration());
+      programP(programNode);
+    } catch (ParseException e) {
+      panicMode();
+    }
     return programNode;
   }
 
   // Program' → Declaration Program' | ε
   private void programP(ProgramNode programNode) {
-    Token currentToken = tokenReader.getCurrentToken();
-    if (currentToken != null && (TokenUtility.isTypeToken(currentToken) || TokenUtility.isStatementToken(currentToken))) {
-      programNode.addDeclaration(declaration());
-      programP(programNode);
+    try {
+      Token currentToken = tokenReader.getCurrentToken();
+      if (currentToken != null && (TokenUtility.isTypeToken(currentToken) || TokenUtility.isStatementToken(currentToken))) {
+        programNode.addDeclaration(declaration());
+        programP(programNode);
+      }
+    } catch (ParseException e) {
+      panicMode();
     }
   }
 
   // Declaration → Function | VarDecl
   private ASTNode declaration() {
-    if (tokenReader.getCurrentToken() != null && TokenUtility.isTypeToken(tokenReader.getCurrentToken())) {
-      String type = tokenReader.getCurrentToken().tokenValue();
-      eat(tokenReader.getCurrentToken().tokenType());
-      Token identifierToken = eat(IDENTIFIER);
-      String name = identifierToken.tokenValue();
-      if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
-        return function(type, name);
-      } else {
-        return varDecl(type, name);
+    try {
+      if (tokenReader.getCurrentToken() != null && TokenUtility.isTypeToken(tokenReader.getCurrentToken())) {
+        String type = tokenReader.getCurrentToken().tokenValue();
+        eat(tokenReader.getCurrentToken().tokenType());
+        Token identifierToken = eat(IDENTIFIER);
+        String name = identifierToken.tokenValue();
+        if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == L_PARENTHESIS) {
+          return function(type, name);
+        } else {
+          return varDecl(type, name);
+        }
       }
+      throw new ParseException("Expected declaration");
+    } catch (ParseException e) {
+      panicMode();
+      return null;
     }
-    throw new ParseException("Expected declaration");
   }
 
   // Function -> Type Identifier ( Params ) { StmtList }
   private FunctionDeclarationNode function(String type, String name) {
-    eat(L_PARENTHESIS);
-    List<ParameterNode> params = params();
-    eat(R_PARENTHESIS);
-    eat(L_BRACE);
-    BlockNode body = new BlockNode();
-    stmtList(body);
-    eat(R_BRACE);
-    return new FunctionDeclarationNode(type, name, params, body);
+    try {
+      eat(L_PARENTHESIS);
+      List<ParameterNode> params = params();
+      eat(R_PARENTHESIS);
+      eat(L_BRACE);
+      BlockNode body = new BlockNode();
+      stmtList(body);
+      eat(R_BRACE);
+      return new FunctionDeclarationNode(type, name, params, body);
+    } catch (ParseException e) {
+      panicMode();
+      return null;
+    }
   }
 
   // Params → Type Identifier Params' | ε
   private List<ParameterNode> params() {
     List<ParameterNode> parameters = new ArrayList<>();
-    if (tokenReader.getCurrentToken() != null && TokenUtility.isTypeToken(tokenReader.getCurrentToken())) {
-      String type = tokenReader.getCurrentToken().tokenValue();
-      eat(tokenReader.getCurrentToken().tokenType());
-      Token identifierToken = eat(IDENTIFIER);
-      parameters.add(new ParameterNode(type, identifierToken.tokenValue()));
-      paramsP(parameters);
+    try {
+      if (tokenReader.getCurrentToken() != null && TokenUtility.isTypeToken(tokenReader.getCurrentToken())) {
+        String type = tokenReader.getCurrentToken().tokenValue();
+        eat(tokenReader.getCurrentToken().tokenType());
+        Token identifierToken = eat(IDENTIFIER);
+        parameters.add(new ParameterNode(type, identifierToken.tokenValue()));
+        paramsP(parameters);
+      }
+      return parameters;
+    } catch (ParseException e) {
+      panicMode();
+      return parameters;
     }
-    return parameters;
   }
 
   // AssignmentOrExprStmt -> Identifier (= Expression ; | ExprStmt')
   private ASTNode assignmentOrExprStmt() {
-    Token identifier = eat(IDENTIFIER);
-    if (tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
-      eat(ASSIGNMENT);
-      ASTNode expr = expression();
-      eat(SEMICOLON);
-      return new AssignmentNode(new IdentifierNode(identifier.tokenValue()), expr);
-    } else {
-      return completeExprStmt(new IdentifierNode(identifier.tokenValue()));
+    try {
+      Token identifier = eat(IDENTIFIER);
+      if (tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
+        eat(ASSIGNMENT);
+        ASTNode expr = expression();
+        eat(SEMICOLON);
+        return new AssignmentNode(new IdentifierNode(identifier.tokenValue()), expr);
+      } else {
+        return completeExprStmt(new IdentifierNode(identifier.tokenValue()));
+      }
+    } catch (ParseException e) {
+      panicMode();
+      return null;
     }
   }
 
   // CompleteExprStmt → ExpressionP ;
   private ASTNode completeExprStmt(ASTNode initial) {
-    ASTNode expr = expressionP(initial);
-    eat(SEMICOLON);
-    return expr;
+    try {
+      ASTNode expr = expressionP(initial);
+      eat(SEMICOLON);
+      return expr;
+    } catch (ParseException e) {
+      panicMode();
+      return null;
+    }
   }
 
   // VarDecl -> Type Identifier VarDecl'
   private VariableDeclarationNode varDecl(String type, String name) {
-    ASTNode initializer = varDeclP(name);
-    return new VariableDeclarationNode(type, name, initializer);
+    try {
+      ASTNode initializer = varDeclP(name);
+      return new VariableDeclarationNode(type, name, initializer);
+    } catch (ParseException e) {
+      panicMode();
+      return null;
+    }
   }
 
   // VarDecl' -> ; | = Expression ;
   private ASTNode varDeclP(String name) {
-    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
-      eat(ASSIGNMENT);
-      ASTNode expr = expression();
+    try {
+      if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
+        eat(ASSIGNMENT);
+        ASTNode expr = expression();
+        eat(SEMICOLON);
+        return new AssignmentNode(new IdentifierNode(name), expr);
+      }
       eat(SEMICOLON);
-      return new AssignmentNode(new IdentifierNode(name), expr);
+      return null;
+    } catch (ParseException e) {
+      panicMode();
+      return null;
     }
-    eat(SEMICOLON);
-    return null;
   }
 
   // Expression -> OrExpr Expression'
   private ASTNode expression() {
-    ASTNode left = orExpr();
-    return expressionP(left);
+    ASTNode left = null;
+    try {
+      left = orExpr();
+      return expressionP(left);
+    } catch (ParseException e) {
+      panicMode();
+      return left;
+    }
   }
 
   // ExpressionP → = Expression | ε
   private ASTNode expressionP(ASTNode left) {
-    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
-      eat(ASSIGNMENT);
-      ASTNode right = expression();
-      return new AssignmentNode((IdentifierNode) left, right);
+    try {
+      if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
+        eat(ASSIGNMENT);
+        ASTNode right = expression();
+        return new AssignmentNode((IdentifierNode) left, right);
+      }
+      return left;
+    } catch (ParseException e) {
+      panicMode();
+      return left;
     }
-    return left;
   }
 
   // OrExpr -> AndExpr OrExpr'
   private ASTNode orExpr() {
-    ASTNode left = andExpr();
-    return orExprP(left);
+    ASTNode left = null;
+    try {
+      left = andExpr();
+      return orExprP(left);
+    } catch (ParseException e) {
+      panicMode();
+      return left;
+    }
   }
 
   // OrExpr' -> || AndExpr OrExpr' | ε
   private ASTNode orExprP(ASTNode left) {
-    if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == OR) {
-      eat(OR);
-      ASTNode right = andExpr();
-      return orExprP(new BinaryOperatorNode("||", left, right));
+    try {
+      if (tokenReader.getCurrentToken() != null && tokenReader.getCurrentToken().tokenType() == OR) {
+        eat(OR);
+        ASTNode right = andExpr();
+        return orExprP(new BinaryOperatorNode("||", left, right));
+      }
+      return left;
+    } catch (ParseException e) {
+      panicMode();
+      return left;
     }
-    return left;
   }
 
   // Factor -> Identifier Factor' | IntLiteral | CharLiteral | StringLiteral | BoolLiteral | ( Expression )

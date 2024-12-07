@@ -11,4 +11,8 @@ public class LoggerMessage {
   public static final String PARSER_DEBUG = "DEBUG PARSER - Current token [ '{}'] with value [ '{}' ] - expected [ '{}' ]";
 
   public static final String PARSER_ERROR = "ERROR PARSER - {}";
+
+  public static final String PARSER_SYNC_INIT = "WARN  PARSER - Synchronizing parser";
+
+  public static final String PARSER_SYNC_END = "WARN  PARSER - Parser synchronized";
 }

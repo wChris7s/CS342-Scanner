@@ -1,5 +1,6 @@
 package com.ucsp.app.parser;
 
+import com.ucsp.app.exceptions.ParseException;
 import com.ucsp.app.logger.utils.LoggerMessage;
 import com.ucsp.app.parser.ast.node.ASTNode;
 import com.ucsp.app.parser.ast.node.impl.*;
@@ -39,7 +40,7 @@ public class Parser {
       String errMessage = "Syntax error: expected " + tokenType + " but got " + currentToken;
       log.error(LoggerMessage.PARSER_ERROR, errMessage);
 
-      throw new RuntimeException(errMessage);
+      throw new ParseException(errMessage);
     }
   }
 
@@ -49,7 +50,7 @@ public class Parser {
       String errMessage = "Syntax error: expected EOF but found extra tokens";
       log.error(LoggerMessage.PARSER_ERROR, errMessage);
 
-      throw new RuntimeException("Syntax error: expected EOF but found extra tokens");
+      throw new ParseException(errMessage);
     }
     return program;
   }
@@ -84,7 +85,7 @@ public class Parser {
         return varDecl(type, name);
       }
     }
-    throw new RuntimeException("Expected declaration");
+    throw new ParseException("Expected declaration");
   }
 
   // Function -> Type Identifier ( Params ) { StmtList }
@@ -209,7 +210,7 @@ public class Parser {
       eat(R_PARENTHESIS);
       return expr;
     }
-    throw new RuntimeException("Expected factor");
+    throw new ParseException("Expected factor");
   }
 
   // Factor' -> ( ExprList ) | ε
@@ -277,7 +278,7 @@ public class Parser {
       String errMessage = "Syntax error: expected a type but got " + tokenReader.getCurrentToken();
       log.error(LoggerMessage.PARSER_ERROR, errMessage);
 
-      throw new RuntimeException(errMessage);
+      throw new ParseException(errMessage);
     }
   }
 

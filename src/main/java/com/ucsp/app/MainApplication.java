@@ -3,10 +3,10 @@ package com.ucsp.app;
 import com.ucsp.app.parser.Parser;
 import com.ucsp.app.parser.ast.node.impl.ProgramNode;
 import com.ucsp.app.parser.ast.printer.ASTPrinterGraphviz;
-import com.ucsp.app.processors.TokenProcessor;
-import com.ucsp.app.processors.impl.*;
+import com.ucsp.app.scanner.processors.TokenProcessor;
 import com.ucsp.app.reader.Reader;
 import com.ucsp.app.scanner.Scanner;
+import com.ucsp.app.scanner.processors.impl.*;
 import com.ucsp.app.token.reader.TokenReader;
 import com.ucsp.app.token.reader.impl.TokenReaderImpl;
 

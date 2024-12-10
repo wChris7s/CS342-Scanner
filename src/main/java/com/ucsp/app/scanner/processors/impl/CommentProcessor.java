@@ -1,8 +1,8 @@
-package com.ucsp.app.processors.impl;
+package com.ucsp.app.scanner.processors.impl;
 
 import com.ucsp.app.logger.ScannerPositionManager;
 import com.ucsp.app.logger.utils.LoggerMessage;
-import com.ucsp.app.processors.TokenProcessor;
+import com.ucsp.app.scanner.processors.TokenProcessor;
 import com.ucsp.app.reader.Reader;
 import com.ucsp.app.token.Token;
 import com.ucsp.app.token.types.impl.Operator;

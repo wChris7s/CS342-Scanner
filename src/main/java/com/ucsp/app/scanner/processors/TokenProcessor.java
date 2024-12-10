@@ -1,4 +1,4 @@
-package com.ucsp.app.processors;
+package com.ucsp.app.scanner.processors;
 
 import com.ucsp.app.token.Token;
 

@@ -1,5 +1,7 @@
 int k = 20;
 int w 10;
+string abc = "1";
+char c = 'a';
 
 int foo(int x, int y) {
     if (x > 10 && y == 10) {
@@ -14,6 +16,7 @@ int foo(int x, int y) {
         }
         return 1;
     }
+    string abc = "abc123";
 }
 
 int main() {
@@ -23,3 +26,4 @@ int main() {
     }
     return a;
 }
+

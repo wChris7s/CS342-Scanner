@@ -288,10 +288,10 @@ public class Parser {
       return new LiteralNode(Integer.parseInt(literal.tokenValue()), "int");
     } else if (currentToken.tokenType() == CHAR_LITERAL) {
       Token literal = eat(CHAR_LITERAL);
-      return new LiteralNode(literal.tokenValue().charAt(1), "char");
+      return new LiteralNode(literal.tokenValue(), "char");
     } else if (currentToken.tokenType() == STRING_LITERAL) {
       Token literal = eat(STRING_LITERAL);
-      return new LiteralNode(literal.tokenValue().substring(1, literal.tokenValue().length() - 1), "string");
+      return new LiteralNode(literal.tokenValue(), "string");
     } else if (currentToken.tokenType() == BOOL_LITERAL) {
       Token literal = eat(BOOL_LITERAL);
       return new LiteralNode(Boolean.parseBoolean(literal.tokenValue()), "bool");

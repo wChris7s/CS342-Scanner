@@ -1,23 +1,23 @@
-package com.ucsp.app.processors.impl;
+package com.ucsp.app.scanner.processors.impl;
 
 import com.ucsp.app.logger.ScannerPositionManager;
 import com.ucsp.app.logger.utils.LoggerMessage;
 import com.ucsp.app.reader.Reader;
-import com.ucsp.app.processors.TokenProcessor;
+import com.ucsp.app.token.types.impl.Category;
 import com.ucsp.app.token.Token;
-import com.ucsp.app.token.types.impl.Operator;
+import com.ucsp.app.scanner.processors.TokenProcessor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
 @Slf4j
-public class OperatorProcessor implements TokenProcessor {
+public class StringProcessor implements TokenProcessor {
 
   private final Reader reader;
 
   private final ScannerPositionManager positionManager;
 
-  public OperatorProcessor(Reader reader) {
+  public StringProcessor(Reader reader) {
     this.reader = reader;
     this.positionManager = ScannerPositionManager.getInstance();
   }
@@ -26,27 +26,27 @@ public class OperatorProcessor implements TokenProcessor {
   public Token process() throws IOException {
     StringBuilder tokenBuilder = new StringBuilder();
     int currentColumn = positionManager.getColumn();
-    tokenBuilder.append(reader.peekChar());
     positionManager.updatePosition(reader.getChar());
 
-    if (Operator.contains(tokenBuilder.toString() + reader.peekChar())) {
-      tokenBuilder.append(reader.peekChar());
-      positionManager.updatePosition(reader.getChar());
+    while (reader.hasNext()) {
+      char currentChar = reader.getChar();
+      positionManager.updatePosition(currentChar);
+      if (currentChar == '"') break;
+      tokenBuilder.append(currentChar);
     }
-    String processedToken = tokenBuilder.toString();
-    Operator operator = Operator.fromString(processedToken);
+    String literalValue = tokenBuilder.toString();
 
     log.info(LoggerMessage.SCANNER_DEBUG,
-        operator.name(),
-        processedToken,
+        Category.STRING_LITERAL.name(),
+        literalValue,
         positionManager.getLine(),
         currentColumn);
 
-    return new Token(operator, processedToken);
+    return new Token(Category.STRING_LITERAL, literalValue);
   }
 
   @Override
   public boolean supports(char currentChar) {
-    return Operator.contains(String.valueOf(currentChar));
+    return currentChar == '"';
   }
 }

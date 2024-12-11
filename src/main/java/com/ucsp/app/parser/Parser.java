@@ -5,188 +5,36 @@ import com.ucsp.app.logger.utils.LoggerMessage;
 import com.ucsp.app.parser.ast.node.ASTNode;
 import com.ucsp.app.parser.ast.node.impl.*;
 import com.ucsp.app.parser.utilties.TokenUtility;
+import com.ucsp.app.semantic.SemanticManager;
 import com.ucsp.app.token.Token;
 import com.ucsp.app.token.reader.TokenReader;
 import com.ucsp.app.token.types.TokenType;
 import lombok.Getter;
-import org.slf4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashMap;
-import java.util.Stack;
 
 import static com.ucsp.app.token.types.impl.Category.*;
 import static com.ucsp.app.token.types.impl.Delimiter.*;
 import static com.ucsp.app.token.types.impl.Keyword.*;
 import static com.ucsp.app.token.types.impl.Operator.*;
 
+@Slf4j
 public class Parser {
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(Parser.class);
-  private final TokenReader tokenReader;
 
+  private final SemanticManager semanticManager;
+
+  private final TokenReader tokenReader;
 
   @Getter
   private boolean hasErrors;
 
-  private HashMap<String, String> globalVariables;
-
-  private Stack<HashMap<String, String>> functionScopes;
-
-
-  private Stack<HashMap<String, String>> temporaryScopes;
   public Parser(TokenReader tokenReader) {
     this.tokenReader = tokenReader;
     this.hasErrors = false;
-    this.globalVariables = new HashMap<>();
-    this.functionScopes = new Stack<>();
-    this.temporaryScopes = new Stack<>();
-
+    this.semanticManager = new SemanticManager();
   }
-  private String getNodeType(ASTNode node) {
-    if (node instanceof IdentifierNode) {
-      return getVariableType(((IdentifierNode) node).getName());
-    } else if (node instanceof LiteralNode) {
-      return ((LiteralNode) node).getType();
-    } else if (node instanceof BinaryOperatorNode) {
-
-      BinaryOperatorNode binaryOp = (BinaryOperatorNode) node;
-      String leftType = getNodeType(binaryOp.getLeft());
-      String rightType = getNodeType(binaryOp.getRight());
-      if (leftType == null || rightType == null || !leftType.equals(rightType)) {
-        log.error("Type mismatch in binary operation: '{}' and '{}'.", leftType, rightType);
-        return null; // Error
-      }
-      return leftType;
-    }
-    return null;
-  }
-
-
-  private String getVariableType(String name) {
-
-    if (!temporaryScopes.isEmpty() && temporaryScopes.peek().containsKey(name)) {
-      return temporaryScopes.peek().get(name);
-    }
-
-
-    if (!functionScopes.isEmpty() && functionScopes.peek().containsKey(name)) {
-      return functionScopes.peek().get(name);
-    }
-
-
-    return globalVariables.getOrDefault(name, null);
-  }
-
-  private void validateType(String var1, String var2) {
-    String type1 = getVariableType(var1);
-    String type2 = getVariableType(var2);
-
-    if (type1 == null) {
-      log.error("Variable '{}' is not declared.", var1);
-      return;
-    }
-
-    if (type2 == null) {
-      log.error("Variable '{}' is not declared.", var2);
-      return;
-    }
-
-    if (!type1.equals(type2)) {
-      log.error("Type mismatch: '{}' (type: {}) and '{}' (type: {}).", var1, type1, var2, type2);
-    }
-  }
-
-
-
-  private void validateArithmeticTypes(ASTNode left, ASTNode right, String operator) {
-    String type1 = getNodeType(left);
-    String type2 = getNodeType(right);
-
-    if (type1 == null) {
-      log.error("Left operand in '{}' operation is not declared.", operator);
-      return;
-    }
-
-    if (type2 == null) {
-      log.error("Right operand in '{}' operation is not declared.", operator);
-      return;
-    }
-
-    if (!type1.equals(type2)) {
-      log.error("Type mismatch in '{}' operation: Left operand (type: {}) and Right operand (type: {}).",
-              operator, type1, type2);
-    }
-  }
-
-
-
-  private void addVariable(String name, String type, boolean isTemporary) {
-    if (isTemporary) {
-      if (temporaryScopes.isEmpty()) {
-        temporaryScopes.push(new HashMap<>());
-      }
-      HashMap<String, String> currentScope = temporaryScopes.peek();
-
-      if (currentScope.containsKey(name)) {
-        log.warn("Variable '{}' already declared in the current loop scope.", name);
-      } else if (getVariableType(name) != null) {
-
-        log.warn("Variable '{}' shadows an outer scope variable.", name);
-        currentScope.put(name, type);
-      } else {
-        currentScope.put(name, type);
-      }
-    } else if (!functionScopes.isEmpty()) {
-
-      HashMap<String, String> currentFunctionScope = functionScopes.peek();
-
-      if (currentFunctionScope.containsKey(name)) {
-        log.error("Variable '{}' already declared in the current function scope.", name);
-      } else if (globalVariables.containsKey(name)) {
-
-        log.warn("Variable '{}' already declared globally, but now declared in the current function scope.", name);
-        currentFunctionScope.put(name, type);
-      } else {
-        currentFunctionScope.put(name, type);
-      }
-    } else {
-      if (globalVariables.containsKey(name)) {
-        log.error("Variable '{}' already declared globally.", name);
-      } else {
-        globalVariables.put(name, type);
-      }
-    }
-  }
-
-
-
-
-
-
-
-
-  private void enterFunctionScope() {
-    functionScopes.push(new HashMap<>());
-  }
-
-
-  private void exitFunctionScope() {
-    if (!functionScopes.isEmpty()) {
-      functionScopes.pop();
-    }
-  }
-
-  private void enterTemporaryScope() {
-    temporaryScopes.push(new HashMap<>());
-  }
-
-  private void exitTemporaryScope() {
-    if (!temporaryScopes.isEmpty()) {
-      temporaryScopes.pop();
-    }
-  }
-
 
   private void panicMode() {
     log.warn(LoggerMessage.PARSER_SYNC_INIT);
@@ -195,16 +43,16 @@ public class Parser {
     List<TokenType> syncTokens = List.of(SEMICOLON, L_BRACE, R_BRACE, EOF);
     while (currentToken != null && !syncTokens.contains(currentToken.tokenType())) {
       log.warn(LoggerMessage.PARSER_PANIC_MODE_EAT,
-              currentToken.tokenType().name(),
-              currentToken.tokenValue());
+          currentToken.tokenType().name(),
+          currentToken.tokenValue());
       tokenReader.advanceToken();
       currentToken = tokenReader.getCurrentToken();
     }
     if (currentToken != null && currentToken.tokenType() == SEMICOLON) {
-      log.warn(LoggerMessage.PARSER_PANIC_MODE,
-              currentToken.tokenType().name(),
-              currentToken.tokenValue());
       tokenReader.advanceToken();
+      log.warn(LoggerMessage.PARSER_PANIC_MODE,
+          tokenReader.getCurrentToken().tokenType().name(),
+          tokenReader.getCurrentToken().tokenValue());
     }
     log.warn(LoggerMessage.PARSER_SYNC_END);
   }
@@ -213,9 +61,9 @@ public class Parser {
     Token currentToken = tokenReader.getCurrentToken();
     if (currentToken != null && currentToken.tokenType() == tokenType) {
       log.info(LoggerMessage.PARSER_DEBUG,
-              currentToken.tokenType().name(),
-              currentToken.tokenValue(),
-              tokenType.name());  // expected
+          currentToken.tokenType().name(),
+          currentToken.tokenValue(),
+          tokenType.name());  // expected
 
       tokenReader.advanceToken();
       return currentToken;
@@ -287,18 +135,18 @@ public class Parser {
   // Function -> Type Identifier ( Params ) { StmtList }
   private FunctionDeclarationNode function(String type, String name) {
     try {
-      enterFunctionScope();
+      semanticManager.enterFunctionScope();
       eat(L_PARENTHESIS);
       List<ParameterNode> params = params();
-      for (ParameterNode param : params) {
-        addVariable(param.getName(), param.getType(), false);
-      }
+      params.forEach(parameterNode -> semanticManager
+          .addVariable(parameterNode.getName(), parameterNode.getType(), false));
       eat(R_PARENTHESIS);
       eat(L_BRACE);
       BlockNode body = new BlockNode();
       stmtList(body);
       eat(R_BRACE);
-      exitFunctionScope();
+      semanticManager.exitFunctionScope();
+      semanticManager.exitBlockScope();
       return new FunctionDeclarationNode(type, name, params, body);
     } catch (ParseException e) {
       panicMode();
@@ -328,7 +176,7 @@ public class Parser {
   private ASTNode assignmentOrExprStmt() {
     try {
       Token identifier = eat(IDENTIFIER);
-      if (getVariableType(identifier.tokenValue()) == null) {
+      if (semanticManager.getVariableType(identifier.tokenValue()) == null) {
         log.error("Variable '{}' is not declared.", identifier.tokenValue());
       }
       if (tokenReader.getCurrentToken().tokenType() == ASSIGNMENT) {
@@ -360,8 +208,9 @@ public class Parser {
   // VarDecl -> Type Identifier VarDecl'
   private VariableDeclarationNode varDecl(String type, String name) {
     try {
-      addVariable(name, type, false);
+      semanticManager.addVariable(name, type, true);
       ASTNode initializer = varDeclP(name);
+
       return new VariableDeclarationNode(type, name, initializer);
     } catch (ParseException e) {
       panicMode();
@@ -445,11 +294,10 @@ public class Parser {
     Token currentToken = tokenReader.getCurrentToken();
 
 
-
     if (currentToken.tokenType() == IDENTIFIER) {
       Token identifier = eat(IDENTIFIER);
 
-      if (getVariableType(identifier.tokenValue()) == null) {
+      if (semanticManager.getVariableType(identifier.tokenValue()) == null) {
         log.error("Variable '{}' is not declared.", identifier.tokenValue());
       }
 
@@ -462,10 +310,10 @@ public class Parser {
       return new LiteralNode(Integer.parseInt(literal.tokenValue()), "int");
     } else if (currentToken.tokenType() == CHAR_LITERAL) {
       Token literal = eat(CHAR_LITERAL);
-      return new LiteralNode(literal.tokenValue(),"char");
+      return new LiteralNode(literal.tokenValue(), "char");
     } else if (currentToken.tokenType() == STRING_LITERAL) {
       Token literal = eat(STRING_LITERAL);
-      return new LiteralNode(literal.tokenValue(),"string");
+      return new LiteralNode(literal.tokenValue(), "string");
     } else if (currentToken.tokenType() == BOOL_LITERAL) {
       Token literal = eat(BOOL_LITERAL);
       return new LiteralNode(Boolean.parseBoolean(literal.tokenValue()), "bool");
@@ -514,9 +362,11 @@ public class Parser {
       return printStmt();
     } else if (currentToken.tokenType() == L_BRACE) {
       eat(L_BRACE);
+      semanticManager.enterBlockScope();
       BlockNode block = new BlockNode();
       stmtList(block);
       eat(R_BRACE);
+      semanticManager.exitBlockScope();
       return block;
     } else {
       return exprStmt();
@@ -534,13 +384,19 @@ public class Parser {
       if (binaryOp.getLeft() instanceof IdentifierNode && binaryOp.getRight() instanceof IdentifierNode) {
         String var1 = ((IdentifierNode) binaryOp.getLeft()).getName();
         String var2 = ((IdentifierNode) binaryOp.getRight()).getName();
-        validateType(var1, var2);
+        semanticManager.validateType(var1, var2);
       }
     }
 
     eat(R_PARENTHESIS);
+    semanticManager.enterBlockScope();
     ASTNode thenBranch = statement();
+    semanticManager.exitBlockScope();
+
+    semanticManager.enterBlockScope();
     ASTNode elseBranch = ifStmtP();
+    semanticManager.exitBlockScope();
+
     return new IfNode(condition, thenBranch, elseBranch);
   }
 
@@ -593,7 +449,7 @@ public class Parser {
     eat(FOR);
     eat(L_PARENTHESIS);
 
-    enterTemporaryScope();
+    semanticManager.enterBlockScope();
 
     ASTNode initializer = forInit();
     ASTNode condition = expression();
@@ -603,7 +459,7 @@ public class Parser {
       if (binaryOp.getLeft() instanceof IdentifierNode && binaryOp.getRight() instanceof IdentifierNode) {
         String var1 = ((IdentifierNode) binaryOp.getLeft()).getName();
         String var2 = ((IdentifierNode) binaryOp.getRight()).getName();
-        validateType(var1, var2);
+        semanticManager.validateType(var1, var2);
       }
     }
 
@@ -612,7 +468,7 @@ public class Parser {
     eat(R_PARENTHESIS);
     ASTNode body = statement();
 
-    exitTemporaryScope();
+    semanticManager.exitBlockScope();
 
     return new ForNode(initializer, condition, increment, body);
   }
@@ -640,12 +496,15 @@ public class Parser {
       if (binaryOp.getLeft() instanceof IdentifierNode && binaryOp.getRight() instanceof IdentifierNode) {
         String var1 = ((IdentifierNode) binaryOp.getLeft()).getName();
         String var2 = ((IdentifierNode) binaryOp.getRight()).getName();
-        validateType(var1, var2);
+        semanticManager.validateType(var1, var2);
       }
     }
 
     eat(R_PARENTHESIS);
+    semanticManager.enterBlockScope();
     ASTNode body = statement();
+    semanticManager.exitBlockScope();
+
     return new WhileNode(condition, body);
   }
 
@@ -723,7 +582,7 @@ public class Parser {
   // EqExpr' -> == RelExpr EqExpr' | != RelExpr EqExpr' | epsilon
   private ASTNode eqExprP(ASTNode left) {
     if (tokenReader.getCurrentToken() != null &&
-            (tokenReader.getCurrentToken().tokenType() == EQUAL || tokenReader.getCurrentToken().tokenType() == NOT_EQUAL)) {
+        (tokenReader.getCurrentToken().tokenType() == EQUAL || tokenReader.getCurrentToken().tokenType() == NOT_EQUAL)) {
       Token operator = eat(tokenReader.getCurrentToken().tokenType());
       ASTNode right = relExpr();
       return eqExprP(new BinaryOperatorNode(operator.tokenValue(), left, right));
@@ -740,10 +599,10 @@ public class Parser {
   // RelExpr' -> < Expr RelExpr' | > Expr RelExpr' | <= Expr RelExpr' | >= Expr RelExpr' | epsilon
   private ASTNode relExprP(ASTNode left) {
     if (tokenReader.getCurrentToken() != null &&
-            (tokenReader.getCurrentToken().tokenType() == LESS_THAN ||
-                    tokenReader.getCurrentToken().tokenType() == GREATER_THAN ||
-                    tokenReader.getCurrentToken().tokenType() == LESS_THAN_OR_EQUAL ||
-                    tokenReader.getCurrentToken().tokenType() == GREATER_THAN_OR_EQUAL)) {
+        (tokenReader.getCurrentToken().tokenType() == LESS_THAN ||
+            tokenReader.getCurrentToken().tokenType() == GREATER_THAN ||
+            tokenReader.getCurrentToken().tokenType() == LESS_THAN_OR_EQUAL ||
+            tokenReader.getCurrentToken().tokenType() == GREATER_THAN_OR_EQUAL)) {
       Token operator = eat(tokenReader.getCurrentToken().tokenType());
       ASTNode right = expr();
       return relExprP(new BinaryOperatorNode(operator.tokenValue(), left, right));
@@ -760,11 +619,11 @@ public class Parser {
   // Expr' -> + Term Expr' | - Term Expr' | epsilon
   private ASTNode exprP(ASTNode left) {
     if (tokenReader.getCurrentToken() != null &&
-            (tokenReader.getCurrentToken().tokenType() == ADDITION ||
-                    tokenReader.getCurrentToken().tokenType() == SUBTRACTION)) {
+        (tokenReader.getCurrentToken().tokenType() == ADDITION ||
+            tokenReader.getCurrentToken().tokenType() == SUBTRACTION)) {
       Token operator = eat(tokenReader.getCurrentToken().tokenType());
       ASTNode right = term();
-      validateArithmeticTypes(left, right, operator.tokenValue());
+      semanticManager.validateArithmeticTypes(left, right, operator.tokenValue());
       return exprP(new BinaryOperatorNode(operator.tokenValue(), left, right));
     }
     return left;
@@ -779,12 +638,12 @@ public class Parser {
   // Term' -> * Unary Term' | / Unary Term' | % Unary Term' | epsilon
   private ASTNode termP(ASTNode left) {
     if (tokenReader.getCurrentToken() != null &&
-            (tokenReader.getCurrentToken().tokenType() == MULTIPLICATION ||
-                    tokenReader.getCurrentToken().tokenType() == DIVISION ||
-                    tokenReader.getCurrentToken().tokenType() == MODULUS)) {
+        (tokenReader.getCurrentToken().tokenType() == MULTIPLICATION ||
+            tokenReader.getCurrentToken().tokenType() == DIVISION ||
+            tokenReader.getCurrentToken().tokenType() == MODULUS)) {
       Token operator = eat(tokenReader.getCurrentToken().tokenType());
       ASTNode right = unary();
-      validateArithmeticTypes(left, right, operator.tokenValue());
+      semanticManager.validateArithmeticTypes(left, right, operator.tokenValue());
       return termP(new BinaryOperatorNode(operator.tokenValue(), left, right));
     }
     return left;

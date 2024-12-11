@@ -33,4 +33,6 @@ public class LoggerMessage {
   public static final String PARSER_SYNC_INIT = PARSER_COLOR + " - Synchronizing parser";
 
   public static final String PARSER_SYNC_END = PARSER_COLOR + " - Parser synchronized";
+
+  public static final String PARSER_FUNCTION_SEMANTIC_ERROR = PARSER_COLOR + " - Variable [ '{}' ] already declared in the current function scope";
 }

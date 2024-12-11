@@ -9,7 +9,7 @@ import com.ucsp.app.token.Token;
 import com.ucsp.app.token.reader.TokenReader;
 import com.ucsp.app.token.types.TokenType;
 import lombok.Getter;
-import org.slf4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +19,9 @@ import static com.ucsp.app.token.types.impl.Delimiter.*;
 import static com.ucsp.app.token.types.impl.Keyword.*;
 import static com.ucsp.app.token.types.impl.Operator.*;
 
+@Slf4j
 public class Parser {
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(Parser.class);
+
   private final TokenReader tokenReader;
 
   @Getter
@@ -44,10 +45,10 @@ public class Parser {
       currentToken = tokenReader.getCurrentToken();
     }
     if (currentToken != null && currentToken.tokenType() == SEMICOLON) {
-      log.warn(LoggerMessage.PARSER_PANIC_MODE,
-          currentToken.tokenType().name(),
-          currentToken.tokenValue());
       tokenReader.advanceToken();
+      log.warn(LoggerMessage.PARSER_PANIC_MODE,
+          tokenReader.getCurrentToken().tokenType().name(),
+          tokenReader.getCurrentToken().tokenValue());
     }
     log.warn(LoggerMessage.PARSER_SYNC_END);
   }
